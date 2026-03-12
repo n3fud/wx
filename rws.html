@@ -7,10 +7,11 @@
 <style>
 body{
     font-family: Arial, sans-serif;
-    background:#0a1e2e;
-    color:#fff;
+    background:#0b1d2a;
+    color:white;
     padding:20px;
 }
+
 #summary{
     white-space: pre-wrap;
     background:#111;
@@ -18,44 +19,39 @@ body{
     border-radius:6px;
     border:1px solid #444;
 }
-h1{
-    color:#4fc3f7;
-}
 </style>
 </head>
 
 <body>
 
-<h1>Regional Weather Summary – NWS State College</h1>
-<div id="summary">Loading latest summary...</div>
+<h2>NWS State College – Regional Weather Summary</h2>
+<div id="summary">Loading...</div>
 
 <script>
 
 async function loadRWS(){
 
-    try {
+    try{
 
-        // Get list of latest RWS products for State College (CTP)
-        const listResponse = await fetch(
-            "https://api.weather.gov/products/types/RWS/locations/CTP"
-        );
-        const listData = await listResponse.json();
+        const list = await fetch("https://api.weather.gov/products/types/RWS/locations/CTP");
+        const listData = await list.json();
 
-        // Get the latest product ID
-        const latestID = listData["@graph"][0].id;
+        // correct property name
+        const latestProductURL = listData["@graph"][0]["@id"];
 
-        // Fetch the full product text
-        const productResponse = await fetch(latestID);
-        const productData = await productResponse.json();
+        const product = await fetch(latestProductURL);
+        const productData = await product.json();
 
-        document.getElementById("summary").textContent = productData.productText;
+        document.getElementById("summary").textContent =
+            productData.productText;
 
-    } catch(error){
+    }
+    catch(err){
 
         document.getElementById("summary").textContent =
             "Unable to load weather summary.";
 
-        console.error(error);
+        console.error(err);
 
     }
 
