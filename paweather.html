@@ -398,7 +398,7 @@ async function fetchRWS() {
     document.getElementById('rwsHdr').textContent='NWS Regional Weather Summary';
     document.getElementById('rwsBody').innerHTML=
       `<span style="color:var(--orange)">Error: ${e.message}</span>\n\n`+
-      `<a href="https://forecast.weather.gov/product.php?site=NWS&issuedby=CTP&product=RWS&format=CI" target="_blank" style="color:var(--cyan)">↗ View RWS on weather.gov</a>`;
+      `<a href="https://api.weather.gov/products/types/RWS/locations/CTP" target="_blank" style="color:var(--cyan)">↗ View RWS on weather.gov</a>`;
     document.getElementById('sbRws').textContent='RWS: Error';
   }
 }
