@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pennsylvania River & Stream Gauge Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111720;
+    --surface2: #1a2233;
+    --border: #1f2d42;
+    --text: #d4e4f7;
+    --muted: #5a7a9a;
+    --accent: #00b4d8;
+    --accent2: #48cae4;
+    
+    --normal: #22c55e;
+    --action: #f59e0b;
+    --minor: #f97316;
+    --moderate: #ef4444;
+    --major: #b91c1c;
+    --unknown: #64748b;
+    --low: #3b82f6;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0d1520 0%, transparent 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left {}
+
+  .site-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(18px, 2.5vw, 26px);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .header-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .refresh-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 7px 14px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: var(--accent); color: var(--bg); }
+  .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #last-updated {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    background: var(--surface);
+  }
+
+  .stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 24px;
+    border-right: 1px solid var(--border);
+    min-width: 100px;
+    flex: 1;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .stat-pill:hover { background: var(--surface2); }
+  .stat-pill.active { background: var(--surface2); }
+
+  .stat-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 16px 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .search-box {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    outline: none;
+    min-width: 240px;
+    flex: 1;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .filter-select {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%235a7a9a'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color 0.2s;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+
+  .results-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    padding: 0 32px 40px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+
+  thead th {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th.sorted { color: var(--accent2); }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0.6; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(31,45,66,0.6);
+    transition: background 0.12s;
+    animation: rowFade 0.3s ease both;
+  }
+  tbody tr:hover { background: var(--surface); }
+
+  @keyframes rowFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  td {
+    padding: 10px 12px;
+    vertical-align: middle;
+  }
+
+  .gauge-name {
+    font-weight: 500;
+    color: #e2f0ff;
+    line-height: 1.3;
+  }
+  .gauge-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .gauge-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+  }
+  .gauge-link:hover { opacity: 1; text-decoration: underline; }
+
+  .stage-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .stage-unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
+
+  .flow-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  .threshold { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+  .threshold span { color: var(--text); }
+
+  /* status badge */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-normal    { background: rgba(34,197,94,0.12);  color: var(--normal);   border: 1px solid rgba(34,197,94,0.3);  }
+  .status-action    { background: rgba(245,158,11,0.12); color: var(--action);   border: 1px solid rgba(245,158,11,0.3); }
+  .status-minor     { background: rgba(249,115,22,0.12); color: var(--minor);    border: 1px solid rgba(249,115,22,0.3); }
+  .status-moderate  { background: rgba(239,68,68,0.12);  color: var(--moderate); border: 1px solid rgba(239,68,68,0.3); }
+  .status-major     { background: rgba(185,28,28,0.2);   color: #fca5a5;         border: 1px solid rgba(185,28,28,0.5); }
+  .status-low       { background: rgba(59,130,246,0.12); color: var(--low);      border: 1px solid rgba(59,130,246,0.3); }
+  .status-unknown   { background: rgba(100,116,139,0.12);color: var(--unknown);  border: 1px solid rgba(100,116,139,0.3);}
+
+  .dot-normal   { background: var(--normal); }
+  .dot-action   { background: var(--action); }
+  .dot-minor    { background: var(--minor); }
+  .dot-moderate { background: var(--moderate); }
+  .dot-major    { background: var(--major); }
+  .dot-low      { background: var(--low); }
+  .dot-unknown  { background: var(--unknown); }
+
+  /* flash for active flood */
+  @keyframes pulse-red {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    50% { box-shadow: 0 0 0 4px rgba(239,68,68,0.2); }
+  }
+  .status-major, .status-moderate { animation: pulse-red 2s infinite; }
+
+  /* progress bar showing stage vs flood stage */
+  .stage-bar-wrap {
+    width: 80px;
+    height: 5px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .stage-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* ── LOADING ── */
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    transition: opacity 0.5s;
+  }
+  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .loader-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .loader-bar-bg {
+    width: 300px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loader-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .loader-status {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 12px;
+    min-height: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    padding: 12px 32px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .legend-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 3px 0;
+    transition: color 0.15s;
+  }
+  .legend-item:hover { color: var(--text); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── SOURCE INFO ── */
+  .source-bar {
+    padding: 10px 32px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    letter-spacing: 0.05em;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .source-bar a { color: var(--accent); text-decoration: none; }
+  .source-bar a:hover { text-decoration: underline; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* ── ERROR BANNER ── */
+  .error-banner {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    padding: 10px 32px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    display: none;
+  }
+  .error-banner.show { display: block; }
+
+  /* responsive */
+  @media (max-width: 768px) {
+    header, .controls, .table-wrap, .legend, .source-bar { padding-left: 16px; padding-right: 16px; }
+    .stat-pill { padding: 12px 14px; min-width: 70px; }
+    .stat-count { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div id="loading-overlay">
+  <div class="loader-logo">PA Stream Monitor</div>
+  <div class="loader-bar-bg"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-status" id="loader-status">Initializing...</div>
+</div>
+
+<div class="wrapper">
+  <header>
+    <div class="header-left">
+      <div class="site-eyebrow">Live Data · USGS + NOAA NWS NWPS</div>
+      <h1>Pennsylvania <span>River &amp; Stream</span> Gauge Monitor</h1>
+      <div class="header-meta" id="last-updated">Loading data from live sources...</div>
+    </div>
+    <div class="header-right">
+      <span id="data-age"></span>
+      <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">⟳ Refresh</button>
+    </div>
+  </header>
+
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-pill" onclick="filterByStatus('all')">
+      <div class="stat-count" id="stat-total" style="color:#fff">—</div>
+      <div class="stat-label">Total Sites</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('major')">
+      <div class="stat-count" id="stat-major" style="color:var(--major)">—</div>
+      <div class="stat-label">Major Flood</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('moderate')">
+      <div class="stat-count" id="stat-moderate" style="color:var(--moderate)">—</div>
+      <div class="stat-label">Moderate</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('minor')">
+      <div class="stat-count" id="stat-minor" style="color:var(--minor)">—</div>
+      <div class="stat-label">Minor Flood</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('action')">
+      <div class="stat-count" id="stat-action" style="color:var(--action)">—</div>
+      <div class="stat-label">Action Stage</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('normal')">
+      <div class="stat-count" id="stat-normal" style="color:var(--normal)">—</div>
+      <div class="stat-label">Normal</div>
+    </div>
+    <div class="stat-pill" onclick="filterByStatus('low')">
+      <div class="stat-count" id="stat-low" style="color:var(--low)">—</div>
+      <div class="stat-label">Low Water</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="legend-label">Flood Status:</span>
+    <div class="legend-item" onclick="filterByStatus('major')"><div class="legend-dot" style="background:var(--major)"></div>Major Flood</div>
+    <div class="legend-item" onclick="filterByStatus('moderate')"><div class="legend-dot" style="background:var(--moderate)"></div>Moderate Flood</div>
+    <div class="legend-item" onclick="filterByStatus('minor')"><div class="legend-dot" style="background:var(--minor)"></div>Minor Flood</div>
+    <div class="legend-item" onclick="filterByStatus('action')"><div class="legend-dot" style="background:var(--action)"></div>Action Stage</div>
+    <div class="legend-item" onclick="filterByStatus('normal')"><div class="legend-dot" style="background:var(--normal)"></div>Normal / Below Flood</div>
+    <div class="legend-item" onclick="filterByStatus('low')"><div class="legend-dot" style="background:var(--low)"></div>Low Water</div>
+    <div class="legend-item" onclick="filterByStatus('unknown')"><div class="legend-dot" style="background:var(--unknown)"></div>No Threshold Data</div>
+  </div>
+
+  <div class="error-banner" id="error-banner"></div>
+
+  <div class="controls">
+    <input type="search" class="search-box" id="search-box" placeholder="Search gauge name, river, or county..." oninput="applyFilters()">
+    <select class="filter-select" id="county-filter" onchange="applyFilters()">
+      <option value="">All Counties</option>
+    </select>
+    <select class="filter-select" id="status-filter" onchange="applyFilters()">
+      <option value="">All Statuses</option>
+      <option value="major">Major Flood</option>
+      <option value="moderate">Moderate Flood</option>
+      <option value="minor">Minor Flood</option>
+      <option value="action">Action Stage</option>
+      <option value="normal">Normal</option>
+      <option value="low">Low Water</option>
+      <option value="unknown">No Threshold</option>
+    </select>
+    <select class="filter-select" id="sort-col" onchange="applyFilters()">
+      <option value="name">Sort: Name</option>
+      <option value="stage" selected>Sort: Stage Height</option>
+      <option value="flow">Sort: Flow Rate</option>
+      <option value="status">Sort: Flood Status</option>
+      <option value="pct">Sort: % of Flood Stage</option>
+    </select>
+    <span class="results-count" id="results-count"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="gauge-table">
+      <thead>
+        <tr>
+          <th onclick="sortBy('name')">Site Name <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('county')">County <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('stage')">Stage (ft) <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('flow')">Flow (cfs) <span class="sort-arrow">↕</span></th>
+          <th>NWS Status</th>
+          <th onclick="sortBy('action_stage')">Action Stage <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('flood_stage')">Flood Stage <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('moderate_stage')">Moderate <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('major_stage')">Major <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('pct')">% of Flood <span class="sort-arrow">↕</span></th>
+          <th>Links</th>
+        </tr>
+      </thead>
+      <tbody id="gauge-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="empty-state" style="display:none">No gauges match your current filters.</div>
+  </div>
+
+  <footer class="source-bar">
+    <span>DATA SOURCES:</span>
+    <span>USGS Water Services: <a href="https://waterservices.usgs.gov" target="_blank">waterservices.usgs.gov</a></span>
+    <span>NOAA NWPS: <a href="https://water.noaa.gov/state/PA" target="_blank">water.noaa.gov/state/PA</a></span>
+    <span>NWS RIV GAUGES: <a href="https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/riv_gauges/MapServer" target="_blank">NOAA ArcGIS MapServer</a></span>
+    <span>NWPS API: <a href="https://api.water.noaa.gov/nwps/v1" target="_blank">api.water.noaa.gov</a></span>
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let allGauges = [];
+let nwpsData = {};   // lid -> nwps threshold data
+let filterStatus = '';
+let sortColumn = 'stage';
+let sortDir = -1; // -1 = desc, 1 = asc
+
+const STATUS_ORDER = { major:0, moderate:1, minor:2, action:3, normal:4, low:5, unknown:6 };
+
+// ═══════════════════════════════════════════
+//  LOADER
+// ═══════════════════════════════════════════
+function setLoader(pct, msg) {
+  document.getElementById('loader-bar').style.width = pct + '%';
+  document.getElementById('loader-status').textContent = msg;
+}
+function hideLoader() {
+  const ol = document.getElementById('loading-overlay');
+  ol.classList.add('hidden');
+  setTimeout(() => ol.remove(), 600);
+}
+
+// ═══════════════════════════════════════════
+//  MAIN LOAD
+// ═══════════════════════════════════════════
+async function loadAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  document.getElementById('error-banner').classList.remove('show');
+
+  try {
+    setLoader(5, 'Fetching USGS Pennsylvania stream gauges...');
+
+    // 1. Get all PA stream sites with current stage + flow
+    const usgsUrl = 'https://waterservices.usgs.gov/nwis/iv/?stateCd=PA&parameterCd=00060,00065&siteType=ST&format=json&siteStatus=active';
+    const usgsResp = await fetch(usgsUrl);
+    if (!usgsResp.ok) throw new Error('USGS API error: ' + usgsResp.status);
+    const usgsData = await usgsResp.json();
+    setLoader(35, 'Parsing USGS gauge data...');
+
+    // Parse USGS time series
+    const siteMap = parseUSGS(usgsData);
+    setLoader(50, 'Fetching NWS flood stage thresholds (NOAA NWPS)...');
+
+    // 2. Get NWS thresholds from NOAA ArcGIS MapServer for PA
+    await fetchNWSThresholds();
+    setLoader(80, 'Merging data sources...');
+
+    // 3. Merge
+    allGauges = Object.values(siteMap);
+    mergeNWPS();
+    setLoader(95, 'Rendering table...');
+
+    populateCountyFilter();
+    applyFilters();
+    updateStats();
+    updateHeader();
+    setLoader(100, 'Complete!');
+    setTimeout(hideLoader, 400);
+
+  } catch(err) {
+    console.error(err);
+    showError('Error loading data: ' + err.message + '. Some data may be incomplete.');
+    if (allGauges.length > 0) {
+      applyFilters();
+      updateStats();
+      updateHeader();
+    }
+    hideLoader();
+  }
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════
+//  PARSE USGS
+// ═══════════════════════════════════════════
+function parseUSGS(data) {
+  const siteMap = {};
+  const series = data?.value?.timeSeries || [];
+
+  for (const ts of series) {
+    const siteInfo = ts.sourceInfo;
+    const siteNo = siteInfo?.siteCode?.[0]?.value;
+    if (!siteNo) continue;
+
+    const props = siteInfo.siteProperty || [];
+    const county = props.find(p => p.name === 'countyCd')?.value || '';
+    const stateCd = props.find(p => p.name === 'stateCd')?.value || '';
+    if (stateCd !== '42') continue; // PA = 42
+
+    if (!siteMap[siteNo]) {
+      siteMap[siteNo] = {
+        siteNo,
+        name: siteInfo.siteName || '',
+        lat: siteInfo.geoLocation?.geogLocation?.latitude,
+        lon: siteInfo.geoLocation?.geogLocation?.longitude,
+        countyCd: county,
+        county: '',
+        stage: null,
+        flow: null,
+        stageTime: null,
+        flowTime: null,
+        // NWS thresholds (to be merged)
+        lid: null,
+        action_stage: null,
+        flood_stage: null,
+        moderate_stage: null,
+        major_stage: null,
+        nws_status: null,
+        obsTime: null,
+      };
+    }
+
+    const parmCd = ts.variable?.variableCode?.[0]?.value;
+    const vals = ts.values?.[0]?.value || [];
+    const latest = vals.filter(v => v.value && v.value !== '-999999').pop();
+
+    if (parmCd === '00065' && latest) {
+      siteMap[siteNo].stage = parseFloat(latest.value);
+      siteMap[siteNo].stageTime = latest.dateTime;
+    }
+    if (parmCd === '00060' && latest) {
+      siteMap[siteNo].flow = parseFloat(latest.value);
+      siteMap[siteNo].flowTime = latest.dateTime;
+    }
+  }
+
+  // county code lookup for PA
+  Object.values(siteMap).forEach(s => {
+    s.county = paCounty(s.countyCd);
+  });
+
+  return siteMap;
+}
+
+// ═══════════════════════════════════════════
+//  FETCH NWS THRESHOLDS via NOAA ArcGIS
+// ═══════════════════════════════════════════
+async function fetchNWSThresholds() {
+  // NOAA MapServer layer 0 = Observed River Stages (includes all threshold fields for PA bbox)
+  // We query by Pennsylvania bounding box
+  const baseUrl = 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/riv_gauges/MapServer/0/query';
+  const params = new URLSearchParams({
+    where: "STATE='PA'",
+    outFields: 'LID,NAME,WATERBODY,STATE,STATUS,OBSERVED,OBSTIME,UNITS,ACTION,FLOOD,MODERATE,MAJOR,LOWTHRESH,LOWTHRESHUNITS,URL',
+    returnGeometry: false,
+    f: 'json',
+    resultRecordCount: 2000,
+  });
+
+  const resp = await fetch(baseUrl + '?' + params.toString());
+  if (!resp.ok) {
+    console.warn('NWS MapServer returned', resp.status);
+    return;
+  }
+  const json = await resp.json();
+  const features = json?.features || [];
+
+  nwpsData = {};
+  for (const f of features) {
+    const a = f.attributes;
+    const lid = a.LID;
+    if (!lid) continue;
+    nwpsData[lid] = {
+      lid,
+      name: a.NAME,
+      waterbody: a.WATERBODY,
+      status: a.STATUS,       // 'no_flooding','action','minor','moderate','major','low_water'
+      observed: a.OBSERVED,
+      obsTime: a.OBSTIME,
+      units: a.UNITS,
+      action: parseThresh(a.ACTION),
+      flood: parseThresh(a.FLOOD),
+      moderate: parseThresh(a.MODERATE),
+      major: parseThresh(a.MAJOR),
+      lowThresh: parseThresh(a.LOWTHRESH),
+      url: a.URL,
+    };
+  }
+}
+
+function parseThresh(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+// ═══════════════════════════════════════════
+//  MERGE NWPS INTO USGS GAUGES
+// ═══════════════════════════════════════════
+function mergeNWPS() {
+  // Build a name-based and siteNo-based index for fuzzy matching
+  // NWS LIDs often correspond to USGS site numbers (last 8 digits) or location abbreviations
+  const siteByNo = {};
+  allGauges.forEach(g => { siteByNo[g.siteNo] = g; });
+
+  // Also try matching by NWS LID -> USGS site number (NWS LIDs for USGS sites = siteNo)
+  for (const [lid, nd] of Object.entries(nwpsData)) {
+    // Many NWS LIDs are 5-letter codes; USGS sites are 8-digit numbers
+    // Try direct match first (LID == siteNo padded)
+    let matched = siteByNo[lid];
+    if (!matched) {
+      // Try name similarity
+      const nwsName = (nd.name || '').toUpperCase();
+      matched = allGauges.find(g => {
+        const uName = g.name.toUpperCase();
+        // If NWS name contains river/site keywords from USGS name
+        return uName.includes(nwsName.substring(0,8)) || nwsName.includes(uName.substring(0,8));
+      });
+    }
+
+    if (matched) {
+      matched.lid = lid;
+      matched.action_stage = nd.action;
+      matched.flood_stage = nd.flood;
+      matched.moderate_stage = nd.moderate;
+      matched.major_stage = nd.major;
+      matched.low_thresh = nd.lowThresh;
+      matched.nws_url = nd.url;
+      matched.nws_waterbody = nd.waterbody;
+      // Use NWS status if observed matches our USGS stage
+      if (nd.status) matched.nws_status = nd.status.toLowerCase().replace(' ','_');
+    }
+  }
+
+  // For gauges without NWS match, compute status from thresholds
+  allGauges.forEach(g => {
+    if (!g.nws_status) {
+      g.nws_status = computeStatus(g);
+    }
+  });
+}
+
+function computeStatus(g) {
+  const s = g.stage;
+  if (s === null) return 'unknown';
+  if (g.major_stage !== null && s >= g.major_stage) return 'major';
+  if (g.moderate_stage !== null && s >= g.moderate_stage) return 'moderate';
+  if (g.flood_stage !== null && s >= g.flood_stage) return 'minor';
+  if (g.action_stage !== null && s >= g.action_stage) return 'action';
+  if (g.low_thresh !== null && s <= g.low_thresh) return 'low_water';
+  if (g.flood_stage !== null) return 'normal';
+  return 'unknown';
+}
+
+function normalizeStatus(s) {
+  if (!s) return 'unknown';
+  s = s.toLowerCase();
+  if (s.includes('major')) return 'major';
+  if (s.includes('moderate')) return 'moderate';
+  if (s.includes('minor') || s.includes('flood')) return 'minor';
+  if (s.includes('action')) return 'action';
+  if (s.includes('low')) return 'low';
+  if (s.includes('no_flood') || s === 'normal' || s === 'obs_not_flood') return 'normal';
+  return 'unknown';
+}
+
+// ═══════════════════════════════════════════
+//  RENDER TABLE
+// ═══════════════════════════════════════════
+function applyFilters() {
+  const search = document.getElementById('search-box').value.toLowerCase();
+  const statusF = document.getElementById('status-filter').value || filterStatus;
+  const countyF = document.getElementById('county-filter').value;
+  const sortSel = document.getElementById('sort-col').value;
+  sortColumn = sortSel;
+
+  let filtered = allGauges.filter(g => {
+    const nameMatch = g.name.toLowerCase().includes(search) || g.siteNo.includes(search) || (g.county||'').toLowerCase().includes(search);
+    const st = normalizeStatus(g.nws_status);
+    const statusMatch = !statusF || st === statusF;
+    const countyMatch = !countyF || g.county === countyF;
+    return nameMatch && statusMatch && countyMatch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    let av, bv;
+    switch(sortColumn) {
+      case 'name':   av = a.name; bv = b.name; break;
+      case 'county': av = a.county; bv = b.county; break;
+      case 'stage':  av = a.stage ?? -Infinity; bv = b.stage ?? -Infinity; break;
+      case 'flow':   av = a.flow ?? -Infinity; bv = b.flow ?? -Infinity; break;
+      case 'action_stage': av = a.action_stage ?? -Infinity; bv = b.action_stage ?? -Infinity; break;
+      case 'flood_stage':  av = a.flood_stage ?? -Infinity; bv = b.flood_stage ?? -Infinity; break;
+      case 'moderate_stage': av = a.moderate_stage ?? -Infinity; bv = b.moderate_stage ?? -Infinity; break;
+      case 'major_stage': av = a.major_stage ?? -Infinity; bv = b.major_stage ?? -Infinity; break;
+      case 'pct': av = pctFlood(a); bv = pctFlood(b); break;
+      case 'status': 
+        av = STATUS_ORDER[normalizeStatus(a.nws_status)] ?? 99;
+        bv = STATUS_ORDER[normalizeStatus(b.nws_status)] ?? 99;
+        break;
+      default: av = 0; bv = 0;
+    }
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (bv - av);
+  });
+
+  renderTable(filtered);
+  document.getElementById('results-count').textContent = `Showing ${filtered.length} of ${allGauges.length} gauges`;
+}
+
+function pctFlood(g) {
+  if (g.stage === null || !g.flood_stage) return -Infinity;
+  return (g.stage / g.flood_stage) * 100;
+}
+
+function renderTable(gauges) {
+  const tbody = document.getElementById('gauge-tbody');
+  const empty = document.getElementById('empty-state');
+
+  if (gauges.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = gauges.map((g, i) => {
+    const st = normalizeStatus(g.nws_status);
+    const stageStr = g.stage !== null ? g.stage.toFixed(2) : '—';
+    const flowStr = g.flow !== null ? g.flow.toLocaleString() : '—';
+    const actionStr = g.action_stage !== null ? g.action_stage.toFixed(1) + ' ft' : '—';
+    const floodStr = g.flood_stage !== null ? g.flood_stage.toFixed(1) + ' ft' : '—';
+    const modStr = g.moderate_stage !== null ? g.moderate_stage.toFixed(1) + ' ft' : '—';
+    const majStr = g.major_stage !== null ? g.major_stage.toFixed(1) + ' ft' : '—';
+
+    const pct = g.stage !== null && g.flood_stage ? Math.min(((g.stage / g.flood_stage)*100),200) : null;
+    const barColor = st === 'major' ? 'var(--major)' : st === 'moderate' ? 'var(--moderate)' : st === 'minor' ? 'var(--minor)' : st === 'action' ? 'var(--action)' : st === 'low' ? 'var(--low)' : 'var(--normal)';
+    const barWidth = pct !== null ? Math.min(pct, 100) : 0;
+
+    const stageLabel = { major:'Major Flood', moderate:'Moderate Flood', minor:'Minor Flood', action:'Action Stage', normal:'Normal', low:'Low Water', unknown:'No Data' }[st] || st;
+    const usgsLink = `https://waterdata.usgs.gov/monitoring-location/${g.siteNo}/`;
+    const nwsLink = g.nws_url || (g.lid ? `https://water.noaa.gov/gauges/${g.lid.toLowerCase()}` : null);
+
+    const timeStr = g.stageTime ? new Date(g.stageTime).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+
+    return `<tr style="animation-delay:${Math.min(i*12,400)}ms">
+      <td>
+        <div class="gauge-name">${escHtml(g.name)}</div>
+        <div class="gauge-id">#${g.siteNo}${g.lid ? ' · NWS:'+g.lid : ''}${timeStr?' · '+timeStr:''}</div>
+      </td>
+      <td style="font-size:12px;color:var(--muted)">${escHtml(g.county)}</td>
+      <td>
+        <div><span class="stage-val">${stageStr}</span><span class="stage-unit">ft</span></div>
+        ${pct !== null ? `<div class="stage-bar-wrap"><div class="stage-bar-fill" style="width:${barWidth}%;background:${barColor}"></div></div>` : ''}
+      </td>
+      <td><span class="flow-val">${flowStr}</span>${g.flow !== null ? '<span class="stage-unit"> cfs</span>' : ''}</td>
+      <td><span class="status-badge status-${st}"><span class="status-dot dot-${st}"></span>${stageLabel}</span></td>
+      <td class="threshold"><span>${actionStr}</span></td>
+      <td class="threshold"><span>${floodStr}</span></td>
+      <td class="threshold"><span>${modStr}</span></td>
+      <td class="threshold"><span>${majStr}</span></td>
+      <td>
+        ${pct !== null ? `<span style="font-family:'Space Mono',monospace;font-size:12px;color:${barColor}">${pct.toFixed(0)}%</span>` : '<span style="color:var(--muted);font-size:11px">—</span>'}
+      </td>
+      <td>
+        <a class="gauge-link" href="${usgsLink}" target="_blank">USGS↗</a>
+        ${nwsLink ? ` <a class="gauge-link" href="${nwsLink}" target="_blank">NWS↗</a>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  STATS + HEADER
+// ═══════════════════════════════════════════
+function updateStats() {
+  const counts = { major:0, moderate:0, minor:0, action:0, normal:0, low:0, unknown:0 };
+  allGauges.forEach(g => {
+    const st = normalizeStatus(g.nws_status);
+    counts[st] = (counts[st] || 0) + 1;
+  });
+  document.getElementById('stat-total').textContent = allGauges.length;
+  document.getElementById('stat-major').textContent = counts.major;
+  document.getElementById('stat-moderate').textContent = counts.moderate;
+  document.getElementById('stat-minor').textContent = counts.minor;
+  document.getElementById('stat-action').textContent = counts.action;
+  document.getElementById('stat-normal').textContent = counts.normal;
+  document.getElementById('stat-low').textContent = counts.low;
+}
+
+function updateHeader() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `Last updated: ${now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} at ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})} · Data from USGS Water Services + NOAA NWS NWPS`;
+}
+
+// ═══════════════════════════════════════════
+//  COUNTY FILTER POPULATION
+// ═══════════════════════════════════════════
+function populateCountyFilter() {
+  const counties = [...new Set(allGauges.map(g => g.county).filter(Boolean))].sort();
+  const sel = document.getElementById('county-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Counties</option>' +
+    counties.map(c => `<option value="${escHtml(c)}"${c===current?'selected':''}>${escHtml(c)}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  SORT
+// ═══════════════════════════════════════════
+function sortBy(col) {
+  if (sortColumn === col) sortDir *= -1;
+  else { sortColumn = col; sortDir = -1; }
+  document.getElementById('sort-col').value = col;
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════
+//  STATUS FILTER FROM STATS BAR
+// ═══════════════════════════════════════════
+function filterByStatus(st) {
+  filterStatus = st === 'all' ? '' : st;
+  document.getElementById('status-filter').value = filterStatus;
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError(msg) {
+  const b = document.getElementById('error-banner');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+
+// PA County codes (FIPS last 3 digits -> name)
+const PA_COUNTIES = {
+  '001':'Adams','003':'Allegheny','005':'Armstrong','007':'Beaver','009':'Bedford',
+  '011':'Berks','013':'Blair','015':'Bradford','017':'Bucks','019':'Butler',
+  '021':'Cambria','023':'Cameron','025':'Carbon','027':'Centre','029':'Chester',
+  '031':'Clarion','033':'Clearfield','035':'Clinton','037':'Columbia','039':'Crawford',
+  '041':'Cumberland','043':'Dauphin','045':'Delaware','047':'Elk','049':'Erie',
+  '051':'Fayette','053':'Forest','055':'Franklin','057':'Fulton','059':'Greene',
+  '061':'Huntingdon','063':'Indiana','065':'Jefferson','067':'Juniata','069':'Lackawanna',
+  '071':'Lancaster','073':'Lawrence','075':'Lebanon','077':'Lehigh','079':'Luzerne',
+  '081':'Lycoming','083':'McKean','085':'Mercer','087':'Mifflin','089':'Monroe',
+  '091':'Montgomery','093':'Montour','095':'Northampton','097':'Northumberland','099':'Perry',
+  '101':'Philadelphia','103':'Pike','105':'Potter','107':'Schuylkill','109':'Snyder',
+  '111':'Somerset','113':'Sullivan','115':'Susquehanna','117':'Tioga','119':'Union',
+  '121':'Venango','123':'Warren','125':'Washington','127':'Wayne','129':'Westmoreland',
+  '131':'Wyoming','133':'York'
+};
+
+function paCounty(fips) {
+  if (!fips) return '';
+  const code = String(fips).padStart(3,'0');
+  return PA_COUNTIES[code] || fips;
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+loadAll();
+// Auto-refresh every 15 minutes
+setInterval(loadAll, 15 * 60 * 1000);
+</script>
+</body>
+</html>
