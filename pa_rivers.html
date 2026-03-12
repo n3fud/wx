@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pennsylvania River &amp; Stream Levels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090d;--bg2:#0c1018;--bg3:#111822;--bd:#1a2535;
+  --tx:#b8ccdf;--mt:#3d5670;--hi:#e0eeff;
+  --ac:#0af;--ac2:#0077cc;--ac3:#004488;
+  --maj:#ff1a3c;--mod:#ff6600;--fld:#ffaa00;
+  --act:#ffe033;--nrm:#00dd88;--unk:#445566;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Barlow','Helvetica Neue',sans-serif;font-size:14px;line-height:1.5}
+.hdr{position:sticky;top:0;z-index:200;background:rgba(7,9,13,.97);border-bottom:1px solid var(--bd);
+     backdrop-filter:blur(8px);display:flex;align-items:center;gap:1.2rem;padding:0 1.5rem;height:56px}
+.logo{font-family:'Oswald',sans-serif;font-size:1.55rem;letter-spacing:.12em;color:var(--hi);white-space:nowrap}
+.logo em{color:var(--ac);font-style:normal}
+.sub{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--mt);display:flex;flex-direction:column;gap:1px}
+.sub strong{color:var(--tx)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:.5rem}
+.pill{font-family:'IBM Plex Mono',monospace;font-size:.58rem;padding:.2rem .5rem;border:1px solid;display:inline-flex;align-items:center;gap:.28rem}
+.pl{border-color:var(--ac3);color:var(--ac)}.pc{border-color:#443300;color:#aa8800}
+.pe{border-color:#550000;color:#ff7777}.pa{border-color:var(--maj);color:var(--maj)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ac);animation:blink 2s infinite}
+@keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(0,170,255,.5)}50%{box-shadow:0 0 0 5px rgba(0,170,255,0)}}
+.btn{font-family:'Barlow',sans-serif;font-weight:600;font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;
+     padding:.26rem .65rem;border:1px solid var(--ac2);background:transparent;color:var(--ac);
+     cursor:pointer;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{background:var(--ac2);color:#fff}
+.btns{border-color:var(--bd);color:var(--mt)}.btns:hover{border-color:var(--mt);color:var(--tx);background:transparent}
+.btncsv{border-color:#1a4a1a;color:#44cc44}.btncsv:hover{background:#1a4a1a}
+.flow{height:2px;background:linear-gradient(90deg,transparent,var(--ac2),var(--ac),var(--ac2),transparent);
+      background-size:200%;animation:flow 4s linear infinite}
+@keyframes flow{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.page{max-width:1800px;margin:0 auto;padding:1.2rem;display:grid;grid-template-columns:252px 1fr;gap:1.2rem}
+.full{grid-column:1/-1}
+.ok{padding:.6rem 1rem;background:rgba(0,221,136,.07);border:1px solid rgba(0,221,136,.2);color:var(--nrm);font-size:.78rem;display:flex;align-items:center;gap:.5rem}
+.acard{margin-bottom:.4rem;padding:.6rem 1rem;display:flex;align-items:flex-start;gap:.7rem;border-left:4px solid}
+.acard.xtr,.acard.sev{border-color:var(--maj);background:rgba(255,26,60,.08)}
+.acard.mod{border-color:var(--fld);background:rgba(255,170,0,.08)}
+.acard.min{border-color:var(--act);background:rgba(255,224,51,.06)}
+.aico{font-size:1.05rem;flex-shrink:0;margin-top:2px}
+.aev{font-family:'Oswald',sans-serif;font-size:.93rem;letter-spacing:.1em}
+.xtr .aev,.sev .aev{color:var(--maj)}.mod .aev{color:var(--fld)}.min .aev{color:var(--act)}
+.ahl{font-size:.73rem;color:var(--tx);margin-top:.1rem}
+.aar{font-size:.65rem;color:var(--mt);margin-top:.1rem}
+.amet{margin-left:auto;text-align:right;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--mt)}
+.errbox{padding:.65rem 1rem;background:rgba(200,50,50,.09);border:1px solid rgba(255,50,50,.22);
+        color:#ff9999;font-family:'IBM Plex Mono',monospace;font-size:.7rem;margin-bottom:.7rem;word-break:break-all}
+.loading{padding:2rem;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--mt)}
+.loading span{color:var(--ac);display:block;font-size:1.4rem;margin-bottom:.5rem;animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.side{display:flex;flex-direction:column;gap:.85rem;align-self:start;position:sticky;top:64px}
+.wg{background:var(--bg2);border:1px solid var(--bd);padding:.8rem}
+.wgt{font-family:'Oswald',sans-serif;font-size:.9rem;letter-spacing:.12em;color:var(--ac);margin-bottom:.6rem;padding-bottom:.38rem;border-bottom:1px solid var(--bd)}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:.32rem}
+.sb{background:var(--bg3);border:1px solid var(--bd);border-left:3px solid;padding:.42rem .38rem;text-align:center;cursor:pointer;transition:background .18s}
+.sb:hover,.sb.on{background:rgba(0,100,180,.11)}
+.sa{border-left-color:var(--ac)}.sj{border-left-color:var(--maj)}.so{border-left-color:var(--mod)}
+.sf{border-left-color:var(--fld)}.sc{border-left-color:var(--act)}.sn{border-left-color:var(--nrm)}
+.snum{font-family:'Oswald',sans-serif;font-size:1.85rem;line-height:1}
+.sa .snum{color:var(--ac)}.sj .snum{color:var(--maj)}.so .snum{color:var(--mod)}
+.sf .snum{color:var(--fld)}.sc .snum{color:var(--act)}.sn .snum{color:var(--nrm)}
+.slbl{font-size:.57rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mt)}
+.fl{display:flex;flex-direction:column;gap:.2rem;max-height:200px;overflow-y:auto}
+.fb{display:flex;align-items:center;justify-content:space-between;padding:.26rem .48rem;
+    background:var(--bg3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;
+    font-family:'Barlow',sans-serif;font-size:.7rem;font-weight:600;text-transform:uppercase;
+    transition:all .18s;text-align:left;width:100%}
+.fb:hover,.fb.on{border-color:var(--ac);background:rgba(0,100,180,.11);color:var(--ac)}
+.fc{font-family:'IBM Plex Mono',monospace;font-size:.6rem;background:var(--bg);padding:.02rem .26rem;flex-shrink:0}
+.leg{display:flex;flex-direction:column;gap:.28rem}
+.lr{display:flex;align-items:center;gap:.48rem;font-size:.68rem}
+.lc{width:62px;height:15px;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:.47rem;font-weight:600;display:flex;align-items:center;justify-content:center;border:1px solid}
+.lmaj{background:rgba(255,26,60,.17);color:var(--maj);border-color:var(--maj)}
+.lmod{background:rgba(255,102,0,.17);color:var(--mod);border-color:var(--mod)}
+.lfld{background:rgba(255,170,0,.17);color:var(--fld);border-color:var(--fld)}
+.lact{background:rgba(255,224,51,.12);color:var(--act);border-color:var(--act)}
+.lnrm{background:rgba(0,221,136,.12);color:var(--nrm);border-color:var(--nrm)}
+.lunk{background:rgba(68,85,102,.17);color:var(--unk);border-color:var(--unk)}
+.src{display:flex;flex-direction:column;gap:.32rem}
+.si{display:flex;align-items:flex-start;gap:.35rem;font-size:.66rem;color:var(--mt)}
+.sd{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.si a{color:var(--ac);text-decoration:none;font-size:.61rem}.si a:hover{text-decoration:underline}
+.con{min-width:0;display:flex;flex-direction:column;gap:1.3rem}
+.sh{font-family:'Oswald',sans-serif;font-size:1.1rem;letter-spacing:.14em;color:var(--hi);margin-bottom:.72rem;display:flex;align-items:center;gap:.72rem}
+.sh span{color:var(--ac)}.sh::after{content:'';flex:1;height:1px;background:var(--bd)}
+.tc{display:flex;align-items:center;gap:.6rem;margin-bottom:.65rem;flex-wrap:wrap}
+.srch{position:relative;flex:1;min-width:175px}
+.srch input{width:100%;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:.7rem;padding:.36rem .62rem .36rem 1.7rem;outline:none;transition:border-color .2s}
+.srch input:focus{border-color:var(--ac)}.srch input::placeholder{color:var(--mt)}
+.sico{position:absolute;left:.48rem;top:50%;transform:translateY(-50%);color:var(--mt);pointer-events:none;font-size:.7rem}
+.stb{font-family:'Barlow',sans-serif;font-size:.61rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:.3rem .58rem;background:var(--bg3);border:1px solid var(--bd);color:var(--mt);cursor:pointer;transition:all .18s}
+.stb:hover,.stb.on{border-color:var(--ac);color:var(--ac)}
+#ri{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--mt);white-space:nowrap}
+.tw{background:var(--bg2);border:1px solid var(--bd);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+thead th{background:var(--bg3);padding:.45rem .6rem;text-align:left;font-family:'Barlow',sans-serif;font-weight:700;font-size:.57rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mt);border-bottom:2px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--ac)}
+tbody tr{border-bottom:1px solid rgba(26,37,53,.45);transition:background .12s}
+tbody tr:hover{background:rgba(0,100,200,.05)}
+tbody tr.hid{display:none}
+td{padding:.4rem .6rem;vertical-align:middle;white-space:nowrap}
+.tn{white-space:normal;min-width:150px;max-width:230px}
+.tn strong{font-size:.74rem;color:var(--hi);display:block}
+.tn small{font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:var(--mt)}
+.trv{font-size:.67rem;color:var(--mt);max-width:140px;white-space:normal}
+.tcty{font-size:.67rem;color:var(--mt)}
+.twfo{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--mt)}
+.tth{font-family:'IBM Plex Mono',monospace;font-size:.64rem;color:var(--mt)}
+.ttm{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--mt)}
+.badge{display:inline-flex;align-items:center;padding:.15rem .4rem;font-family:'Barlow',sans-serif;font-size:.57rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;border:1px solid;white-space:nowrap}
+.bmaj{background:rgba(255,26,60,.15);color:var(--maj);border-color:var(--maj);animation:pmaj 1.4s ease-in-out infinite}
+.bmod{background:rgba(255,102,0,.15);color:var(--mod);border-color:var(--mod);animation:pmod 1.8s ease-in-out infinite}
+.bfld{background:rgba(255,170,0,.15);color:var(--fld);border-color:var(--fld)}
+.bact{background:rgba(255,224,51,.10);color:var(--act);border-color:var(--act)}
+.bnrm{background:rgba(0,221,136,.09);color:var(--nrm);border-color:var(--nrm)}
+.bunk{background:rgba(68,85,102,.12);color:var(--unk);border-color:var(--unk)}
+@keyframes pmaj{0%,100%{box-shadow:0 0 0 0 rgba(255,26,60,.4)}50%{box-shadow:0 0 0 5px rgba(255,26,60,0)}}
+@keyframes pmod{0%,100%{box-shadow:0 0 0 0 rgba(255,102,0,.35)}50%{box-shadow:0 0 0 4px rgba(255,102,0,0)}}
+.bar{display:flex;align-items:center;gap:.36rem}
+.bt{width:48px;height:3px;background:var(--bg3);border:1px solid var(--bd);border-radius:2px;overflow:hidden;flex-shrink:0}
+.bf{height:100%;border-radius:2px}
+.fmaj{background:var(--maj)}.fmod{background:var(--mod)}.ffld{background:var(--fld)}
+.fact{background:var(--act)}.fnrm{background:var(--nrm)}.funk{background:var(--unk)}
+.sv{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.76rem}
+.vmaj{color:var(--maj)}.vmod{color:var(--mod)}.vfld{color:var(--fld)}
+.vact{color:var(--act)}.vnrm{color:var(--nrm)}.vunk{color:var(--unk)}
+.cfs{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:#88ccff}
+.cfs-na{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--mt)}
+.el{font-family:'IBM Plex Mono',monospace;font-size:.57rem;color:var(--ac);text-decoration:none;opacity:.62;transition:opacity .18s}
+.el:hover{opacity:1;text-decoration:underline}
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(222px,1fr));gap:.65rem}
+.rc{background:var(--bg2);border:1px solid var(--bd);padding:.78rem}
+.rct{font-family:'Oswald',sans-serif;font-size:.9rem;letter-spacing:.1em;color:var(--ac);margin-bottom:.42rem}
+.rc p{font-size:.68rem;color:var(--tx);margin-bottom:.5rem;line-height:1.6}
+.rl{display:flex;flex-direction:column;gap:.2rem}
+.rl a{font-size:.64rem;color:var(--ac);text-decoration:none}.rl a:hover{text-decoration:underline}
+footer{background:var(--bg2);border-top:1px solid var(--bd);padding:1rem;text-align:center;font-size:.63rem;color:var(--mt);line-height:2;margin-top:1rem}
+footer a{color:var(--ac);text-decoration:none}footer a:hover{text-decoration:underline}
+footer strong{color:var(--tx)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ac2)}
+@media(max-width:1100px){.page{grid-template-columns:1fr}.side{position:static;display:grid;grid-template-columns:repeat(auto-fill,minmax(202px,1fr))}}
+@media(max-width:600px){.logo{font-size:1.05rem}.sub{display:none}.page{padding:.75rem}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">PA <em>RIVERS</em> &amp; STREAMS</div>
+  <div class="sub">
+    <span>Sources: <strong>NOAA NWPS &middot; USGS IV &middot; NWS Alerts &middot; US ACE &middot; iFlows PA</strong></span>
+    <span id="lupd">Loading&hellip;</span>
+  </div>
+  <div class="hdr-r">
+    <span id="status-pill" class="pill pc">&#8987; Loading</span>
+    <span id="alert-pill" class="pill pa" style="display:none"></span>
+    <button class="btn btncsv" onclick="exportCSV()">&#11015; CSV</button>
+    <button class="btn" onclick="loadAll(true)">&#8635; Refresh</button>
+  </div>
+</header>
+<div class="flow"></div>
+
+<div class="page">
+
+<!-- ALERTS SECTION -->
+<section class="full">
+  <div class="sh">Active NWS <span>Flood Alerts</span> &mdash; Pennsylvania</div>
+  <div id="alerts-wrap">
+    <div class="loading"><span>&#9684;</span><br>Fetching alerts&hellip;</div>
+  </div>
+</section>
+
+<!-- SIDEBAR -->
+<aside class="side">
+  <div class="wg">
+    <div class="wgt">Status Summary</div>
+    <div class="sg">
+      <div class="sb sa on" id="sb-all"      onclick="setStatus('all',this)"><div class="snum" id="st-total">—</div><div class="slbl">All Gauges</div></div>
+      <div class="sb sj"    id="sb-major"    onclick="setStatus('major',this)"><div class="snum" id="st-major">—</div><div class="slbl">Major Flood</div></div>
+      <div class="sb so"    id="sb-moderate" onclick="setStatus('moderate',this)"><div class="snum" id="st-moderate">—</div><div class="slbl">Moderate</div></div>
+      <div class="sb sf"    id="sb-flood"    onclick="setStatus('flood',this)"><div class="snum" id="st-flood">—</div><div class="slbl">Flood Stage</div></div>
+      <div class="sb sc"    id="sb-action"   onclick="setStatus('action',this)"><div class="snum" id="st-action">—</div><div class="slbl">Action Stage</div></div>
+      <div class="sb sn"    id="sb-normal"   onclick="setStatus('normal',this)"><div class="snum" id="st-normal">—</div><div class="slbl">Normal</div></div>
+    </div>
+  </div>
+
+  <div class="wg">
+    <div class="wgt">Filter by River</div>
+    <div class="fl" id="f-river">
+      <button class="fb on" data-val="">All Rivers <span class="fc" id="river-total">—</span></button>
+    </div>
+  </div>
+
+  <div class="wg">
+    <div class="wgt">Filter by County</div>
+    <div class="fl" id="f-county">
+      <button class="fb on" data-val="">All Counties <span class="fc" id="county-total">—</span></button>
+    </div>
+  </div>
+
+  <div class="wg">
+    <div class="wgt">Filter by WFO</div>
+    <div class="fl" id="f-wfo">
+      <button class="fb on" data-val="">All Offices <span class="fc" id="wfo-total">—</span></button>
+    </div>
+  </div>
+
+  <div class="wg">
+    <div class="wgt">Legend</div>
+    <div class="leg">
+      <div class="lr"><div class="lc lmaj">MAJOR</div><span>Major &mdash; significant inundation</span></div>
+      <div class="lr"><div class="lc lmod">MODERATE</div><span>Moderate &mdash; some structures flooded</span></div>
+      <div class="lr"><div class="lc lfld">FLOOD</div><span>Flood (minor) stage &mdash; banks overflow</span></div>
+      <div class="lr"><div class="lc lact">ACTION</div><span>Action stage &mdash; agencies prepare</span></div>
+      <div class="lr"><div class="lc lnrm">NORMAL</div><span>Below action stage</span></div>
+      <div class="lr"><div class="lc lunk">N/A</div><span>No thresholds configured</span></div>
+    </div>
+  </div>
+
+  <div class="wg">
+    <div class="wgt">Data Sources</div>
+    <div class="src">
+      <div class="si"><div class="sd" style="background:var(--ac)"></div>
+        <div><strong>NOAA NWPS MapServer</strong><br><a href="https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/riv_gauges/MapServer/0" target="_blank">riv_gauges layer 0</a></div></div>
+      <div class="si"><div class="sd" style="background:#88ccff"></div>
+        <div><strong>USGS Water Services IV</strong><br><a href="https://waterservices.usgs.gov/nwis/iv/" target="_blank">waterservices.usgs.gov</a></div></div>
+      <div class="si"><div class="sd" style="background:#ffcc00"></div>
+        <div><strong>NWS Alerts API</strong><br><a href="https://api.weather.gov/alerts/active?area=PA" target="_blank">api.weather.gov</a></div></div>
+      <div class="si"><div class="sd" style="background:#88aaff"></div>
+        <div><strong>US Army Corps of Engineers</strong><br><a href="https://www.lrp.usace.army.mil/" target="_blank">lrp.usace.army.mil</a></div></div>
+      <div class="si"><div class="sd" style="background:#aaffcc"></div>
+        <div><strong>iFlows PA / PEMA</strong><br><a href="https://www.iflows.state.pa.us/" target="_blank">iflows.state.pa.us</a></div></div>
+      <div class="si"><div class="sd" style="background:#ffaacc"></div>
+        <div><strong>NOAA HADS</strong><br><a href="https://hads.ncep.noaa.gov/charts/PA.shtml" target="_blank">hads.ncep.noaa.gov</a></div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="con">
+  <section>
+    <div class="sh">NWPS + USGS <span>Pennsylvania</span> River &amp; Stream Gauges
+      <span id="gauge-count-label" style="font-size:.7rem;color:var(--mt);letter-spacing:0;font-family:'IBM Plex Mono',monospace"></span>
+    </div>
+    <div class="tc">
+      <div class="srch"><span class="sico">&#128269;</span>
+        <input id="q" type="text" placeholder="Search name, river, LID, WFO, county&hellip;">
+      </div>
+      <button class="stb on" id="st-status"    onclick="setSort('status',this)">Status</button>
+      <button class="stb"    id="st-stage"     onclick="setSort('stage',this)">Stage &#8597;</button>
+      <button class="stb"    id="st-discharge" onclick="setSort('discharge',this)">Flow &#8597;</button>
+      <button class="stb"    id="st-name"      onclick="setSort('name',this)">Name &#8597;</button>
+      <button class="stb"    id="st-river"     onclick="setSort('river',this)">River &#8597;</button>
+      <button class="stb"    id="st-county"    onclick="setSort('county',this)">County &#8597;</button>
+      <span id="ri"></span>
+    </div>
+    <div id="gauge-wrap">
+      <div class="loading"><span>&#9684;</span><br>Fetching gauge data from NOAA NWPS &amp; USGS&hellip;<br>
+        <small style="font-size:.65rem;color:var(--mt);display:block;margin-top:.5rem">Querying 4 WFOs + USGS IV — may take 10–20 seconds</small>
+      </div>
+    </div>
+    <p style="font-size:.58rem;color:var(--mt);margin-top:.38rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span>Showing <strong id="rc">—</strong> of <strong id="total-count">—</strong> gauges.</span>
+      <span>Stage from NWPS &middot; Discharge from NWPS secvalue (kcfs→cfs) &middot; County via USGS IV &middot; Cache 15 min</span>
+      <a class="el" href="#" onclick="exportCSV();return false">&#11015; Download CSV</a>
+      <a class="el" href="https://water.noaa.gov/map/PA" target="_blank">&#8594; NWPS map</a>
+      <a class="el" href="https://hads.ncep.noaa.gov/charts/PA.shtml" target="_blank">&#8594; All PA DCPs</a>
+    </p>
+  </section>
+
+  <section>
+    <div class="sh">External <span>Resources</span></div>
+    <div class="rg">
+      <div class="rc"><div class="rct">NWS AHPS / NWPS</div>
+        <p>Official stages, forecasts, and flood inundation maps.</p>
+        <div class="rl">
+          <a href="https://water.noaa.gov/map/PA" target="_blank">&#8594; NWPS Pennsylvania Map</a>
+          <a href="https://water.weather.gov/ahps2/index.php?wfo=ctp" target="_blank">&#8594; AHPS WFO State College (CTP)</a>
+          <a href="https://water.weather.gov/ahps2/index.php?wfo=pbz" target="_blank">&#8594; AHPS WFO Pittsburgh (PBZ)</a>
+          <a href="https://water.weather.gov/ahps2/index.php?wfo=phi" target="_blank">&#8594; AHPS WFO Philadelphia (PHI)</a>
+          <a href="https://water.weather.gov/ahps2/index.php?wfo=bgm" target="_blank">&#8594; AHPS WFO Binghamton (BGM)</a>
+        </div></div>
+      <div class="rc"><div class="rct">USGS Streamflow</div>
+        <p>Real-time discharge (cfs) and stage data feeding NWS forecasts.</p>
+        <div class="rl">
+          <a href="https://waterdata.usgs.gov/pa/nwis/rt" target="_blank">&#8594; PA Real-time Streamflow</a>
+          <a href="https://maps.waterdata.usgs.gov/mapper/index.html" target="_blank">&#8594; USGS Water Resources Map</a>
+        </div></div>
+      <div class="rc"><div class="rct">NOAA HADS</div>
+        <p>Every PA Data Collection Platform, including small-stream gauges not in NWPS.</p>
+        <div class="rl">
+          <a href="https://hads.ncep.noaa.gov/charts/PA.shtml" target="_blank">&#8594; All PA DCPs</a>
+          <a href="https://hads.ncep.noaa.gov/interactiveDisplays/displays.shtml" target="_blank">&#8594; HADS Interactive Display</a>
+        </div></div>
+      <div class="rc"><div class="rct">US Army Corps of Engineers</div>
+        <p>Flood-control reservoirs and locks throughout PA. Pool levels affect downstream stages.</p>
+        <div class="rl">
+          <a href="https://www.lrp.usace.army.mil/Missions/Civil-Works/Reservoir-and-Lake-Projects/" target="_blank">&#8594; LRP Reservoir Projects</a>
+          <a href="https://www.nab.usace.army.mil/Missions/Civil-Works/Flood-Risk-Management/" target="_blank">&#8594; NAB Flood Risk (Delaware)</a>
+        </div></div>
+      <div class="rc"><div class="rct">iFlows Pennsylvania</div>
+        <p>PEMA's small-stream gauge network covering creeks not in USGS or NWPS.</p>
+        <div class="rl">
+          <a href="https://www.iflows.state.pa.us/" target="_blank">&#8594; iFlows Live Gauge Map</a>
+          <a href="https://www.pema.pa.gov/Mitigation/Pages/Flood-Warning-System.aspx" target="_blank">&#8594; PEMA Flood Warning System</a>
+        </div></div>
+      <div class="rc"><div class="rct">River Forecast Centers</div>
+        <p>MARFC and NERFC produce official river forecasts for major PA rivers.</p>
+        <div class="rl">
+          <a href="https://www.weather.gov/marfc/" target="_blank">&#8594; MARFC (Middle Atlantic RFC)</a>
+          <a href="https://www.weather.gov/nerfc/" target="_blank">&#8594; NERFC (Northeast RFC)</a>
+        </div></div>
+    </div>
+  </section>
+</div>
+</div>
+
+<footer>
+  <strong>Pennsylvania Rivers &amp; Stream Levels Dashboard</strong><br>
+  Stage: <a href="https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/riv_gauges/MapServer/0" target="_blank">NOAA NWPS MapServer</a> &middot;
+  Discharge: <a href="https://waterservices.usgs.gov/" target="_blank">USGS Water Services IV</a> &middot;
+  <a href="https://api.weather.gov/" target="_blank">NWS Alerts</a> &middot;
+  <a href="https://hads.ncep.noaa.gov/charts/PA.shtml" target="_blank">NOAA HADS</a> &middot;
+  <a href="https://www.usace.army.mil/" target="_blank">US ACE</a> &middot;
+  <a href="https://www.iflows.state.pa.us/" target="_blank">iFlows PA</a><br>
+  Emergencies: <strong>911</strong> &middot; PEMA: <a href="https://www.pema.pa.gov/">pema.pa.gov</a> &middot; 1-800-422-7362<br>
+  Data refreshes every 15 minutes &middot; Informational use only &mdash; always consult official NWS/PEMA sources
+</footer>
+
+<script>
+'use strict';
+
+// ── CONSTANTS ──────────────────────────────────────────────────
+var CACHE_TTL = 15 * 60 * 1000; // 15 minutes in ms
+var CACHE_KEY = 'pa_rivers_v11';
+
+var NWPS_BASE = 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/water/riv_gauges/MapServer/0/query';
+var NWPS_FIELDS = 'gaugelid,status,location,waterbody,state,obstime,wfo,url,action,units,flood,moderate,major,observed,secvalue,secunit,latitude,longitude';
+var ALERTS_URL = 'https://api.weather.gov/alerts/active?area=PA&event=Flood+Warning,Flood+Watch,Flash+Flood+Warning,Flash+Flood+Watch,Flood+Advisory,Flash+Flood+Advisory';
+var USGS_URL = 'https://waterservices.usgs.gov/nwis/iv/?format=json&stateCd=PA&parameterCd=00060,00065&siteStatus=active&siteType=ST';
+
+var WFOS = ['ctp','pbz','phi','bgm'];
+
+var WFO_NAMES = {BGM:'BGM — Binghamton',CTP:'CTP — State College',PBZ:'PBZ — Pittsburgh',PHI:'PHI — Philadelphia'};
+
+var STATUS_PRI = {major:0,moderate:1,flood:2,action:3,normal:4,unknown:5};
+var STATUS_BADGE = {
+  major:'<span class="badge bmaj">&#9650; MAJOR</span>',
+  moderate:'<span class="badge bmod">&#9650; MODERATE</span>',
+  flood:'<span class="badge bfld">&#9650; FLOOD</span>',
+  action:'<span class="badge bact">&#9888; ACTION</span>',
+  normal:'<span class="badge bnrm">&#10003; NORMAL</span>',
+  unknown:'<span class="badge bunk">&mdash; N/A</span>'
+};
+var STATUS_FCLS = {major:'fmaj',moderate:'fmod',flood:'ffld',action:'fact',normal:'fnrm',unknown:'funk'};
+var STATUS_VCLS = {major:'vmaj',moderate:'vmod',flood:'vfld',action:'vact',normal:'vnrm',unknown:'vunk'};
+
+// PA county FIPS → name
+var PA_COUNTY = {
+  '42001':'Adams','42003':'Allegheny','42005':'Armstrong','42007':'Beaver',
+  '42009':'Bedford','42011':'Berks','42013':'Blair','42015':'Bradford',
+  '42017':'Bucks','42019':'Butler','42021':'Cambria','42023':'Cameron',
+  '42025':'Carbon','42027':'Centre','42029':'Chester','42031':'Clarion',
+  '42033':'Clearfield','42035':'Clinton','42037':'Columbia','42039':'Crawford',
+  '42041':'Cumberland','42043':'Dauphin','42045':'Delaware','42047':'Elk',
+  '42049':'Erie','42051':'Fayette','42053':'Forest','42055':'Franklin',
+  '42057':'Fulton','42059':'Greene','42061':'Huntingdon','42063':'Indiana',
+  '42065':'Jefferson','42067':'Juniata','42069':'Lackawanna','42071':'Lancaster',
+  '42073':'Lawrence','42075':'Lebanon','42077':'Lehigh','42079':'Luzerne',
+  '42081':'Lycoming','42083':'McKean','42085':'Mercer','42087':'Mifflin',
+  '42089':'Monroe','42091':'Montgomery','42093':'Montour','42095':'Northampton',
+  '42097':'Northumberland','42099':'Perry','42101':'Philadelphia','42103':'Pike',
+  '42105':'Potter','42107':'Schuylkill','42109':'Snyder','42111':'Somerset',
+  '42113':'Sullivan','42115':'Susquehanna','42117':'Tioga','42119':'Union',
+  '42121':'Venango','42123':'Warren','42125':'Washington','42127':'Wayne',
+  '42129':'Westmoreland','42131':'Wyoming','42133':'York'
+};
+
+// ── STATE ─────────────────────────────────────────────────────
+var gauges = [];    // parsed gauge objects
+var F = {status:'all', river:'', county:'', wfo:'', q:''};
+var sc = 'status', sd = 'asc';
+
+// ── HELPERS ───────────────────────────────────────────────────
+function nn(v) {
+  if (v === null || v === undefined || v === '' || v === -999999) return null;
+  var f = parseFloat(v);
+  return (isNaN(f) || f < -900) ? null : f;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fth(v) { return v !== null ? v.toFixed(1) + ' ft' : '—'; }
+function fcfs(v) { return v !== null ? v.toLocaleString() + ' cfs' : '—'; }
+function ftm(t) {
+  if (!t) return 'N/A';
+  try {
+    return new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'});
+  } catch(e) { return t; }
+}
+function skey(raw) {
+  var r = String(raw||'').toLowerCase().trim();
+  if (r==='major')       return 'major';
+  if (r==='moderate')    return 'moderate';
+  if (r==='minor')       return 'flood';
+  if (r==='action')      return 'action';
+  if (r==='no_flooding') return 'normal';
+  return 'unknown';
+}
+
+// ── SESSION CACHE ─────────────────────────────────────────────
+function cacheGet() {
+  try {
+    var raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    var d = JSON.parse(raw);
+    if (!d || !d.gauges || !d.ts) return null;
+    if (Date.now() - d.ts > CACHE_TTL) return null;
+    return d;
+  } catch(e) { return null; }
+}
+function cacheSet(data) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function cacheClear() {
+  try { sessionStorage.removeItem(CACHE_KEY); } catch(e) {}
+}
+
+// ── FETCH ──────────────────────────────────────────────────────
+function fetchJSON(url) {
+  return fetch(url).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+// Fetch one WFO, paginating if needed
+function fetchWFO(wfo) {
+  var features = [];
+  var seen = {};
+
+  function page(offset) {
+    var url = NWPS_BASE + '?returnGeometry=false&f=json&resultRecordCount=250'
+      + '&outFields=' + NWPS_FIELDS
+      + '&where=wfo+%3D+%27' + wfo + '%27'
+      + '&resultOffset=' + offset;
+    return fetchJSON(url).then(function(j) {
+      if (!j.features) return features;
+      j.features.forEach(function(f) {
+        var lid = (f.attributes && f.attributes.gaugelid) ? f.attributes.gaugelid.toUpperCase().trim() : '';
+        if (!lid || seen[lid]) return;
+        seen[lid] = true;
+        features.push(f);
+      });
+      if (j.exceededTransferLimit && j.features.length > 0 && offset < 2000) {
+        return page(offset + 250);
+      }
+      return features;
+    });
+  }
+  return page(0);
+}
+
+// Fetch all 4 WFOs in parallel
+function fetchAllNWPS() {
+  return Promise.all(WFOS.map(fetchWFO)).then(function(results) {
+    var seen = {};
+    var all = [];
+    results.forEach(function(wfoFeatures) {
+      wfoFeatures.forEach(function(f) {
+        var lid = f.attributes.gaugelid.toUpperCase().trim();
+        if (!seen[lid]) { seen[lid] = true; all.push(f); }
+      });
+    });
+    return all;
+  });
+}
+
+// Fetch USGS IV — returns map of site_no → {county, discharge}
+function fetchUSGS() {
+  return fetchJSON(USGS_URL).then(function(j) {
+    var out = {};
+    var ts = (j.value && j.value.timeSeries) ? j.value.timeSeries : [];
+    ts.forEach(function(t) {
+      var sno = (t.sourceInfo && t.sourceInfo.siteCode && t.sourceInfo.siteCode[0]) ?
+                t.sourceInfo.siteCode[0].value : '';
+      if (!sno) return;
+      var param = (t.variable && t.variable.variableCode && t.variable.variableCode[0]) ?
+                  t.variable.variableCode[0].value : '';
+      var val = nn((t.values && t.values[0] && t.values[0].value && t.values[0].value[0]) ?
+                   t.values[0].value[0].value : null);
+
+      if (!out[sno]) {
+        var county = '';
+        var props = (t.sourceInfo && t.sourceInfo.siteProperty) ? t.sourceInfo.siteProperty : [];
+        for (var i = 0; i < props.length; i++) {
+          if (props[i].name === 'countyCd') {
+            county = PA_COUNTY[props[i].value] || '';
+            break;
+          }
+        }
+        out[sno] = {
+          site_no: sno,
+          site_name: (t.sourceInfo && t.sourceInfo.siteName) ? t.sourceInfo.siteName : '',
+          county: county,
+          discharge: null
+        };
+      }
+      if (param === '00060') out[sno].discharge = val;
+    });
+    return out;
+  }).catch(function() { return {}; }); // USGS failure is non-fatal
+}
+
+// Fetch NWS alerts
+function fetchAlerts() {
+  return fetchJSON(ALERTS_URL).then(function(j) {
+    return (j.features || []).map(function(f) {
+      var p = f.properties || {};
+      return {event:p.event||'',headline:p.headline||'',severity:p.severity||'',areas:p.areaDesc||'',sent:p.sent||null,expires:p.expires||null};
+    });
+  }).catch(function() { return []; });
+}
+
+// ── PARSE ──────────────────────────────────────────────────────
+function parseGauges(features, usgs) {
+  // Build USGS name index for matching
+  var usgsList = Object.values ? Object.values(usgs) : Object.keys(usgs).map(function(k){return usgs[k];});
+  var parsed = [];
+
+  features.forEach(function(f) {
+    var a = f.attributes || {};
+    var lid = String(a.gaugelid || '').toUpperCase().trim();
+    if (!lid) return;
+
+    var obs = nn(a.observed);
+    var act = nn(a.action);
+    var fld = nn(a.flood);
+    var mod = nn(a.moderate);
+    var maj = nn(a.major);
+    var secv = nn(a.secvalue);
+    var secu = String(a.secunit || '').toLowerCase().trim();
+
+    var discharge = null;
+    if (secv !== null) {
+      if (secu === 'kcfs') discharge = Math.round(secv * 1000);
+      else if (secu === 'cfs') discharge = Math.round(secv);
+    }
+
+    var status = skey(a.status);
+    if (status === 'unknown' && obs !== null) {
+      if      (maj !== null && obs >= maj) status = 'major';
+      else if (mod !== null && obs >= mod) status = 'moderate';
+      else if (fld !== null && obs >= fld) status = 'flood';
+      else if (act !== null && obs >= act) status = 'action';
+      else                                  status = 'normal';
+    }
+    if (status === 'unknown' && obs !== null) status = 'normal';
+
+    var wfo   = String(a.wfo   || '').toUpperCase().trim();
+    var state = String(a.state || '').toUpperCase().trim();
+    var name  = String(a.location || '').trim() || lid;
+    var lidlc = lid.toLowerCase();
+    var wfolc = wfo.toLowerCase();
+
+    var gurl = String(a.url || '').trim();
+    if (!gurl) gurl = wfo
+      ? 'https://water.weather.gov/ahps2/hydrograph.php?wfo=' + wfolc + '&gage=' + lidlc
+      : 'https://water.noaa.gov/gauges/' + lidlc;
+
+    // Match USGS by site name word overlap
+    var county = '', usgs_no = '';
+    var nameWords = name.toUpperCase().split(/\s+/).filter(function(w){return w.length > 3;});
+    for (var i = 0; i < usgsList.length; i++) {
+      var us = usgsList[i];
+      if (!us.county) continue;
+      var usname = us.site_name.toUpperCase();
+      var hits = nameWords.filter(function(w){ return usname.indexOf(w) !== -1; }).length;
+      if (hits >= 2) {
+        county = us.county;
+        usgs_no = us.site_no;
+        break;
+      }
+    }
+
+    parsed.push({
+      lid: lid, name: name,
+      river: String(a.waterbody || '').trim(),
+      wfo: wfo, state: state, county: county,
+      observed: obs, discharge: discharge,
+      action: act, flood: fld, moderate: mod, major: maj,
+      units: String(a.units || 'ft').toLowerCase().trim(),
+      status: status,
+      obstime: String(a.obstime || '').trim(),
+      url: gurl,
+      nwps: 'https://water.noaa.gov/gauges/' + lidlc,
+      usgs_no: usgs_no,
+      usgs_url: usgs_no ? 'https://waterdata.usgs.gov/nwis/uv?site_no=' + usgs_no : ''
+    });
+  });
+
+  // Sort by status priority then river then name
+  parsed.sort(function(a, b) {
+    var pa = STATUS_PRI[a.status] !== undefined ? STATUS_PRI[a.status] : 5;
+    var pb = STATUS_PRI[b.status] !== undefined ? STATUS_PRI[b.status] : 5;
+    if (pa !== pb) return pa - pb;
+    if (a.river < b.river) return -1;
+    if (a.river > b.river) return 1;
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
+    return 0;
+  });
+  return parsed;
+}
+
+// ── RENDER ALERTS ─────────────────────────────────────────────
+function renderAlerts(alts) {
+  var wrap = document.getElementById('alerts-wrap');
+  var pill = document.getElementById('alert-pill');
+  if (!alts || alts.length === 0) {
+    wrap.innerHTML = '<div class="ok">&#10003; &nbsp;No active flood warnings, watches, or advisories for Pennsylvania.</div>';
+    pill.style.display = 'none';
+    return;
+  }
+  pill.textContent = '⚠ ' + alts.length + ' Flood Alert' + (alts.length > 1 ? 's' : '');
+  pill.style.display = '';
+  var html = '';
+  alts.forEach(function(al) {
+    var sev = (al.severity || '').toLowerCase();
+    var cls = (sev === 'extreme' || sev === 'severe') ? 'xtr sev' : sev === 'moderate' ? 'mod' : 'min';
+    var ico = al.event.indexOf('Flash') !== -1 ? '⚡' : al.event.indexOf('Warning') !== -1 ? '🔴' : al.event.indexOf('Watch') !== -1 ? '🟠' : '🟡';
+    html += '<div class="acard ' + cls + '">'
+      + '<div class="aico">' + ico + '</div>'
+      + '<div style="flex:1">'
+      + '<div class="aev">' + esc(al.event) + '</div>'
+      + '<div class="ahl">' + esc(al.headline) + '</div>'
+      + '<div class="aar">📍 ' + esc(al.areas) + '</div>'
+      + '</div>'
+      + '<div class="amet">'
+      + (al.expires ? '<div>Expires: ' + ftm(al.expires) + '</div>' : '')
+      + (al.sent    ? '<div>Issued: '  + ftm(al.sent)    + '</div>' : '')
+      + '</div>'
+      + '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+// ── RENDER GAUGES TABLE ───────────────────────────────────────
+function renderTable() {
+  var wrap = document.getElementById('gauge-wrap');
+  if (!gauges.length) {
+    wrap.innerHTML = '<div class="errbox">No gauge data available. Try refreshing.</div>';
+    return;
+  }
+
+  // Stats
+  var st = {total:gauges.length,major:0,moderate:0,flood:0,action:0,normal:0,unknown:0};
+  gauges.forEach(function(g){st[g.status] !== undefined ? st[g.status]++ : st.unknown++;});
+  document.getElementById('st-total').textContent    = st.total;
+  document.getElementById('st-major').textContent    = st.major;
+  document.getElementById('st-moderate').textContent = st.moderate;
+  document.getElementById('st-flood').textContent    = st.flood;
+  document.getElementById('st-action').textContent   = st.action;
+  document.getElementById('st-normal').textContent   = st.normal;
+  document.getElementById('gauge-count-label').textContent = gauges.length + ' gauges';
+  document.getElementById('total-count').textContent = gauges.length;
+
+  // Build filter sidebars
+  var rivers = {}, wfos = {}, counties = {};
+  gauges.forEach(function(g) {
+    if (g.river)  rivers[g.river]   = (rivers[g.river]   || 0) + 1;
+    if (g.wfo)    wfos[g.wfo]       = (wfos[g.wfo]       || 0) + 1;
+    if (g.county) counties[g.county]= (counties[g.county]|| 0) + 1;
+  });
+
+  function buildFilter(id, totalId, map, sorted) {
+    var el = document.getElementById(id);
+    var html = '<button class="fb on" data-val="">All ' + (id.replace('f-','').charAt(0).toUpperCase()+id.replace('f-','').slice(1)) + 's <span class="fc" id="' + totalId + '">' + gauges.length + '</span></button>';
+    sorted.forEach(function(k) {
+      if (!k) return;
+      var label = (id === 'f-wfo' && WFO_NAMES[k]) ? WFO_NAMES[k] : k + (id === 'f-county' ? ' Co.' : '');
+      html += '<button class="fb" data-val="' + esc(k) + '">' + esc(label) + ' <span class="fc">' + map[k] + '</span></button>';
+    });
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var b = e.target.closest('.fb'); if (!b) return;
+      el.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      var key = id === 'f-river' ? 'river' : id === 'f-county' ? 'county' : 'wfo';
+      F[key] = b.dataset.val;
+      render();
+    });
+  }
+
+  var sortedRivers   = Object.keys(rivers).sort(function(a,b){return rivers[b]-rivers[a];});
+  var sortedWfos     = Object.keys(wfos).sort();
+  var sortedCounties = Object.keys(counties).sort();
+  buildFilter('f-river',  'river-total',  rivers,   sortedRivers);
+  buildFilter('f-wfo',    'wfo-total',    wfos,     sortedWfos);
+  buildFilter('f-county', 'county-total', counties, sortedCounties);
+
+  // Build table rows
+  var html = '<div class="tw"><table><thead><tr>'
+    + '<th onclick="setSort(\'name\',document.getElementById(\'st-name\'))">Gauge / LID</th>'
+    + '<th onclick="setSort(\'river\',document.getElementById(\'st-river\'))">River / Waterbody</th>'
+    + '<th onclick="setSort(\'county\',document.getElementById(\'st-county\'))">County</th>'
+    + '<th>WFO</th>'
+    + '<th onclick="setSort(\'status\',document.getElementById(\'st-status\'))">Status</th>'
+    + '<th onclick="setSort(\'stage\',document.getElementById(\'st-stage\'))">Stage (ft)</th>'
+    + '<th onclick="setSort(\'discharge\',document.getElementById(\'st-discharge\'))">Discharge (cfs)</th>'
+    + '<th>Action</th><th>Flood</th><th>Moderate</th><th>Major</th>'
+    + '<th>Observed At (ET)</th><th>Links</th>'
+    + '</tr></thead><tbody id="gb">';
+
+  gauges.forEach(function(g) {
+    var s    = g.status;
+    var obs  = g.observed;
+    var pct  = 0;
+    if (obs !== null) {
+      var ref = g.flood !== null ? g.flood : g.action;
+      if (ref && ref > 0) pct = Math.min(100, Math.round(obs / (ref * 1.3) * 100));
+    }
+    var sord = STATUS_PRI[s] !== undefined ? STATUS_PRI[s] : 5;
+    var fc   = STATUS_FCLS[s] || 'funk';
+    var vc   = STATUS_VCLS[s] || 'vunk';
+
+    var links = '<a class="el" href="' + esc(g.url) + '" target="_blank">AHPS</a>'
+      + ' &nbsp;<a class="el" href="' + esc(g.nwps) + '" target="_blank">NWPS</a>';
+    if (g.usgs_no) links += ' &nbsp;<a class="el" href="' + esc(g.usgs_url) + '" target="_blank">USGS</a>';
+
+    var stateTag = g.state && g.state !== 'PA' ? ' <span style="color:var(--act)">[' + esc(g.state) + ']</span>' : '';
+
+    html += '<tr class="gr"'
+      + ' data-status="' + s + '"'
+      + ' data-sord="' + sord + '"'
+      + ' data-river="' + esc(g.river.toLowerCase()) + '"'
+      + ' data-county="' + esc((g.county || '').toLowerCase()) + '"'
+      + ' data-wfo="' + esc(g.wfo.toLowerCase()) + '"'
+      + ' data-name="' + esc(g.name.toLowerCase()) + '"'
+      + ' data-lid="' + esc(g.lid.toLowerCase()) + '"'
+      + ' data-stage="' + (obs !== null ? obs : -9999) + '"'
+      + ' data-discharge="' + (g.discharge !== null ? g.discharge : -9999) + '">'
+      + '<td class="tn"><strong>' + esc(g.name) + '</strong><small>' + esc(g.lid) + stateTag + '</small></td>'
+      + '<td class="trv">' + esc(g.river || '—') + '</td>'
+      + '<td class="tcty">' + esc(g.county ? g.county + ' Co.' : '—') + '</td>'
+      + '<td class="twfo">' + esc(g.wfo || '—') + '</td>'
+      + '<td>' + (STATUS_BADGE[s] || STATUS_BADGE.unknown) + '</td>'
+      + '<td><div class="bar"><div class="bt"><div class="bf ' + fc + '" style="width:' + pct + '%"></div></div>'
+      + '<span class="sv ' + vc + '">' + (obs !== null ? obs.toFixed(2) + ' ' + esc(g.units) : '—') + '</span></div></td>'
+      + '<td>' + (g.discharge !== null ? '<span class="cfs">' + g.discharge.toLocaleString() + ' <span style="font-size:.58rem;opacity:.7">cfs</span></span>' : '<span class="cfs-na">—</span>') + '</td>'
+      + '<td class="tth">' + fth(g.action) + '</td>'
+      + '<td class="tth">' + fth(g.flood) + '</td>'
+      + '<td class="tth">' + fth(g.moderate) + '</td>'
+      + '<td class="tth">' + fth(g.major) + '</td>'
+      + '<td class="ttm">' + ftm(g.obstime) + '</td>'
+      + '<td style="white-space:nowrap">' + links + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+  render();
+}
+
+// ── FILTER + SORT ─────────────────────────────────────────────
+function setStatus(s, el) {
+  F.status = s;
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  render();
+}
+window.setStatus = setStatus;
+
+function setSort(col, el) {
+  if (sc === col) {
+    sd = sd === 'asc' ? 'desc' : 'asc';
+  } else {
+    sd = (col === 'stage' || col === 'discharge') ? 'desc' : 'asc';
+    sc = col;
+  }
+  document.querySelectorAll('.stb').forEach(function(b){b.classList.remove('on');});
+  if (el) el.classList.add('on');
+
+  var tbody = document.getElementById('gb');
+  if (!tbody) return;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr.gr'));
+  rows.sort(function(a,b) {
+    var d;
+    if (sc === 'status')    { d = parseInt(a.dataset.sord) - parseInt(b.dataset.sord); return sd==='asc'?d:-d; }
+    if (sc === 'stage')     { d = parseFloat(a.dataset.stage) - parseFloat(b.dataset.stage); return sd==='asc'?d:-d; }
+    if (sc === 'discharge') { d = parseFloat(a.dataset.discharge) - parseFloat(b.dataset.discharge); return sd==='asc'?d:-d; }
+    var va = a.dataset[sc]||'', vb = b.dataset[sc]||'';
+    return sd==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  rows.forEach(function(r){tbody.appendChild(r);});
+  render();
+}
+window.setSort = setSort;
+
+function render() {
+  var rows = document.querySelectorAll('#gb tr.gr');
+  var q = F.q;
+  var vis = 0;
+  rows.forEach(function(r) {
+    var ok =
+      (F.status === 'all' || r.dataset.status === F.status) &&
+      (F.river  === '' || r.dataset.river  === F.river.toLowerCase())  &&
+      (F.county === '' || r.dataset.county === F.county.toLowerCase()) &&
+      (F.wfo    === '' || r.dataset.wfo    === F.wfo.toLowerCase())    &&
+      (!q || r.dataset.name.indexOf(q)   !== -1 ||
+             r.dataset.lid.indexOf(q)    !== -1 ||
+             r.dataset.river.indexOf(q)  !== -1 ||
+             r.dataset.wfo.indexOf(q)    !== -1 ||
+             r.dataset.county.indexOf(q) !== -1);
+    r.classList.toggle('hid', !ok);
+    if (ok) vis++;
+  });
+  var rc = document.getElementById('rc');
+  var ri = document.getElementById('ri');
+  if (rc) rc.textContent = vis;
+  if (ri) ri.textContent = vis + ' gauges shown';
+}
+
+document.getElementById('q').addEventListener('input', function(e) {
+  F.q = e.target.value.toLowerCase().trim(); render();
+});
+
+// ── CSV EXPORT ────────────────────────────────────────────────
+function exportCSV() {
+  if (!gauges.length) { alert('No data loaded yet.'); return; }
+  var rows = [['LID','Name','River/Waterbody','State','County','WFO','Status',
+               'Observed (ft)','Discharge (cfs)',
+               'Action Stage (ft)','Flood Stage (ft)','Moderate Stage (ft)','Major Stage (ft)',
+               'Units','Observed At','NWPS URL','AHPS URL','USGS URL']];
+  gauges.forEach(function(g) {
+    rows.push([g.lid,g.name,g.river,g.state,g.county,g.wfo,g.status,
+               g.observed !== null ? g.observed : '',
+               g.discharge !== null ? g.discharge : '',
+               g.action !== null ? g.action : '',
+               g.flood !== null ? g.flood : '',
+               g.moderate !== null ? g.moderate : '',
+               g.major !== null ? g.major : '',
+               g.units, g.obstime, g.nwps, g.url, g.usgs_url]);
+  });
+  var csv = rows.map(function(r) {
+    return r.map(function(c) {
+      var s = String(c);
+      return (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1)
+        ? '"' + s.replace(/"/g,'""') + '"' : s;
+    }).join(',');
+  }).join('\r\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pa_rivers_' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'_') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+window.exportCSV = exportCSV;
+
+// ── LOAD ──────────────────────────────────────────────────────
+function updateStatus(from_cache) {
+  var pill = document.getElementById('status-pill');
+  var lupd = document.getElementById('lupd');
+  var now  = new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  lupd.innerHTML = 'Updated: <strong>' + now + '</strong>' + (from_cache ? ' <span style="color:var(--act)">[cached]</span>' : '');
+  pill.className = 'pill ' + (from_cache ? 'pc' : 'pl');
+  pill.innerHTML = from_cache ? '⌛ Cached' : '<span class="dot"></span> Live';
+}
+
+function loadAll(force) {
+  if (!force) {
+    var cached = cacheGet();
+    if (cached) {
+      gauges = cached.gauges;
+      renderAlerts(cached.alerts);
+      renderTable();
+      updateStatus(true);
+      return;
+    }
+  } else {
+    cacheClear();
+  }
+
+  // Show loading states
+  document.getElementById('gauge-wrap').innerHTML = '<div class="loading"><span>&#9684;</span><br>Fetching NOAA NWPS (4 WFOs) &amp; USGS&hellip;<br><small style="font-size:.65rem;color:var(--mt);display:block;margin-top:.5rem">This may take 10–20 seconds</small></div>';
+  document.getElementById('alerts-wrap').innerHTML = '<div class="loading"><span>&#9684;</span><br>Fetching alerts&hellip;</div>';
+  document.getElementById('status-pill').className = 'pill pc';
+  document.getElementById('status-pill').textContent = '⌛ Loading';
+
+  Promise.all([fetchAllNWPS(), fetchUSGS(), fetchAlerts()])
+    .then(function(results) {
+      var features = results[0];
+      var usgs     = results[1];
+      var alerts   = results[2];
+      gauges = parseGauges(features, usgs);
+      renderAlerts(alerts);
+      renderTable();
+      updateStatus(false);
+      cacheSet({gauges: gauges, alerts: alerts, ts: Date.now()});
+      // Auto-refresh after 15 min
+      setTimeout(function(){ loadAll(true); }, CACHE_TTL);
+    })
+    .catch(function(err) {
+      document.getElementById('gauge-wrap').innerHTML = '<div class="errbox"><strong>Error loading data:</strong> ' + esc(String(err)) + '<br>Check browser console for details. Try refreshing.</div>';
+      document.getElementById('status-pill').className = 'pill pe';
+      document.getElementById('status-pill').textContent = '⚠ Error';
+    });
+}
+
+loadAll(false);
+</script>
+</body>
+</html>
