@@ -375,32 +375,30 @@ function initRadar() {
 }
 
 // ═══════════════════════════════════════════════════
-// RWS via Claude AI
+// RWS 
 // ═══════════════════════════════════════════════════
 async function fetchRWS() {
-  document.getElementById('sbRws').textContent='RWS: Fetching via Claude AI…';
-  try {
-    const text = await aiRelay(
-      `Fetch the latest NWS Regional Weather Summary (product code RWS) from the State College, Pennsylvania forecast office (CTP). ` +
-      `Use the NWS API: first GET https://api.weather.gov/products/types/RWS/locations/CTP to get the list, then GET the URL of the most recent product to retrieve its full text. ` +
-      `Return ONLY the raw product text verbatim — the actual Regional Weather Summary as issued by the meteorologist, ` +
-      `starting from the product header line. Do not summarize, add commentary, or use any markdown formatting. ` +
-      `If RWS is not available for CTP, try https://api.weather.gov/products/types/RWS/locations/PHI instead and return that. ` +
-      `Include the issuance time line from the product header.`
-    );
-    const timeMatch = text.match(/(\d{3,4}\s+(?:AM|PM)\s+\w+\s+\w+\s+\w+\s+\d+\s+\d{4})/i);
-    document.getElementById('rwsHdr').textContent = timeMatch
-      ? `Issued: ${timeMatch[1]}  |  NWS State College, PA (CTP)`
-      : 'NWS State College, PA (CTP) — Regional Weather Summary';
-    document.getElementById('rwsBody').textContent = text;
-    document.getElementById('sbRws').textContent='RWS: Loaded via Claude AI';
-  } catch(e) {
-    document.getElementById('rwsHdr').textContent='NWS Regional Weather Summary';
-    document.getElementById('rwsBody').innerHTML=
-      `<span style="color:var(--orange)">Error: ${e.message}</span>\n\n`+
-      `<a href="https://api.weather.gov/products/types/RWS/locations/CTP" target="_blank" style="color:var(--cyan)">↗ View RWS on weather.gov</a>`;
-    document.getElementById('sbRws').textContent='RWS: Error';
-  }
+    try{
+
+        const list = await fetch("https://api.weather.gov/products/types/RWS/locations/CTP");
+        const listData = await list.json();
+
+        // correct property name
+        const latestProductURL = listData["@graph"][0]["@id"];
+
+        const product = await fetch(latestProductURL);
+        const productData = await product.json();
+
+        document.getElementById("summary").textContent =
+            productData.productText;
+
+    }
+    catch(err){
+
+        document.getElementById("summary").textContent =
+            "Unable to load weather summary.";
+        console.error(err);
+    }
 }
 
 // ═══════════════════════════════════════════════════
