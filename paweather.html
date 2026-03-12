@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pennsylvania Weather Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0a1628;--card:#0f1e36;--card2:#152845;--border:rgba(100,160,255,0.13);--cyan:#00c8e0;--yellow:#f5c842;--orange:#f08030;--red:#e84040;--green:#2ecc71;--text:#cce4ff;--dim:#5878a0;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--sky);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(100,160,255,.2);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+
+/* HEADER */
+header{background:linear-gradient(180deg,#05101d,var(--sky));border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+h1{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:.07em;color:#fff;line-height:1;}
+h1 em{color:var(--cyan);font-style:normal;}
+.hmeta{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.6s ease-in-out infinite;display:inline-block;margin-right:3px;}
+
+/* LAYOUT */
+.body{display:grid;grid-template-columns:1fr 390px;flex:1;overflow:hidden;min-height:0;}
+.left{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+.right{display:flex;flex-direction:column;overflow:hidden;}
+
+/* RADAR */
+.radar-sec{border-bottom:1px solid var(--border);padding:12px 14px;flex-shrink:0;}
+.sec{font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.16em;color:var(--cyan);text-transform:uppercase;margin-bottom:7px;}
+.radar-box{position:relative;background:#000;border:1px solid var(--border);border-radius:3px;overflow:hidden;line-height:0;}
+.radar-box img{width:100%;display:block;max-height:270px;min-height:160px;object-fit:cover;}
+.rlbl{position:absolute;bottom:5px;left:7px;font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:rgba(255,255,255,.65);background:rgba(0,0,0,.55);padding:2px 5px;border-radius:2px;}
+.rts{position:absolute;bottom:5px;right:7px;font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:var(--cyan);background:rgba(0,0,0,.6);padding:2px 5px;border-radius:2px;}
+.rctrl{display:flex;gap:7px;align-items:center;margin-top:7px;}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:.6rem;padding:3px 9px;border:1px solid var(--border);background:var(--card);color:var(--cyan);cursor:pointer;border-radius:2px;transition:background .15s;}
+.btn:hover{background:var(--card2);border-color:var(--cyan);}
+.rfc{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--dim);}
+
+/* CITIES */
+.cities-sec{flex:1;overflow-y:auto;padding:12px 14px;}
+.cities-sec::-webkit-scrollbar{width:3px;}.cities-sec::-webkit-scrollbar-thumb{background:var(--border);}
+.city-search{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:.68rem;border-radius:2px;outline:none;margin-bottom:10px;}
+.city-search:focus{border-color:var(--cyan);}
+.city-search::placeholder{color:var(--dim);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--tc,#3a8ef6);opacity:.85;}
+.card:hover{border-color:var(--cyan);background:var(--card2);}
+.card.sel{border-color:var(--cyan);background:rgba(0,200,224,.07);}
+.cname{font-size:.75rem;font-weight:600;color:#fff;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crow{display:flex;align-items:center;justify-content:space-between;}
+.ctemp{font-family:'IBM Plex Mono',monospace;font-size:1.15rem;font-weight:600;}
+.cicon{font-size:1.25rem;}
+.cdesc{font-size:.6rem;color:var(--dim);text-align:right;line-height:1.3;max-width:85px;}
+.cwind{font-family:'IBM Plex Mono',monospace;font-size:.55rem;color:var(--dim);margin-top:1px;}
+.cload{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--dim);padding:3px 0;}
+
+/* RWS */
+.rws-sec{border-bottom:1px solid var(--border);padding:12px 15px;flex:0 0 auto;max-height:45vh;overflow-y:auto;display:flex;flex-direction:column;}
+.rws-sec::-webkit-scrollbar{width:3px;}.rws-sec::-webkit-scrollbar-thumb{background:var(--border);}
+.rws-hdr{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--yellow);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.rws-body{font-family:'IBM Plex Mono',monospace;font-size:.6rem;line-height:1.8;color:#8aafcf;white-space:pre-wrap;word-break:break-word;}
+.rws-body a{color:var(--cyan);}
+
+/* DETAIL */
+.detail-sec{flex:1;overflow-y:auto;padding:12px 15px;}
+.detail-sec::-webkit-scrollbar{width:3px;}.detail-sec::-webkit-scrollbar-thumb{background:var(--border);}
+.dname{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.05em;color:#fff;}
+.dcoord{font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:var(--dim);margin-bottom:9px;}
+.dcur{display:flex;gap:12px;padding:11px;background:var(--card);border:1px solid var(--border);border-radius:3px;margin-bottom:9px;}
+.dtemp{font-family:'IBM Plex Mono',monospace;font-size:2.4rem;font-weight:600;line-height:1;}
+.dicon{font-size:2.2rem;line-height:1;}
+.dmeta{flex:1;font-size:.68rem;color:var(--dim);line-height:1.95;}
+.dmeta span{color:var(--text);}
+.flbl{font-family:'IBM Plex Mono',monospace;font-size:.56rem;letter-spacing:.14em;color:var(--cyan);text-transform:uppercase;margin:9px 0 5px;}
+.frows{display:flex;flex-direction:column;gap:3px;}
+.frow{display:grid;grid-template-columns:82px 1fr 44px;align-items:center;gap:6px;padding:5px 8px;background:var(--card);border:1px solid var(--border);border-radius:3px;}
+.fname{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--dim);}
+.fdesc{font-size:.63rem;color:var(--text);line-height:1.3;}
+.ftemp{font-family:'IBM Plex Mono',monospace;font-size:.7rem;font-weight:600;text-align:right;}
+.ph{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--dim);text-align:center;padding:28px 12px;line-height:2.2;}
+
+/* ALERTS */
+.alerts{background:rgba(232,64,64,.08);border-bottom:1px solid rgba(232,64,64,.28);padding:5px 16px;font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--red);display:none;}
+.alerts.on{display:block;}
+
+/* STATUS */
+.status{font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:var(--dim);padding:4px 16px;border-top:1px solid var(--border);background:#05101d;display:flex;gap:14px;flex-wrap:wrap;flex-shrink:0;}
+</style>
+</head>
+<body>
+<header>
+  <h1>PA <em>WEATHER</em></h1>
+  <div class="hmeta">
+    <span><span class="dot"></span>LIVE</span>
+    <span id="clock">—</span>
+    <span>NWS STATE COLLEGE (CTP)</span>
+    <span id="hst">Initializing…</span>
+  </div>
+</header>
+<div id="alertsBar" class="alerts"></div>
+<div class="body">
+  <!-- LEFT: Radar + Cities -->
+  <div class="left">
+    <div class="radar-sec">
+      <div class="sec">◈ COMPOSITE RADAR — PA REGION</div>
+      <div class="radar-box">
+        <img id="radarImg" src="" alt="NEXRAD Radar"/>
+        <div class="rlbl">NEXRAD BASE REFLECTIVITY</div>
+        <div class="rts" id="rts">—</div>
+      </div>
+      <div class="rctrl">
+        <button class="btn" id="btnPlay">⏸ PAUSE</button>
+        <span class="rfc" id="rfc">Frame 1 / 12</span>
+        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:var(--dim)">IEM / NWS NEXRAD</span>
+      </div>
+    </div>
+    <div class="cities-sec">
+      <div class="sec">◈ PENNSYLVANIA CITIES</div>
+      <input class="city-search" id="csearch" placeholder="Filter cities…" type="text"/>
+      <div class="grid" id="cityGrid"></div>
+    </div>
+  </div>
+  <!-- RIGHT: RWS + Detail -->
+  <div class="right">
+    <div class="rws-sec">
+      <div class="sec">◈ NWS STATE COLLEGE — REGIONAL WEATHER SUMMARY</div>
+      <div class="rws-hdr" id="rwsHdr">Loading Regional Weather Summary…</div>
+      <div class="rws-body" id="rwsBody"><span class="spin"></span> Fetching via Claude AI…</div>
+    </div>
+    <div class="detail-sec" id="detail">
+      <div class="ph">↖ SELECT A CITY<br>to view current conditions<br>&amp; 7-day forecast</div>
+    </div>
+  </div>
+</div>
+<div class="status">
+  <span id="sbCity">Cities: loading…</span>
+  <span id="sbRadar">Radar: loading…</span>
+  <span id="sbRws">RWS: loading…</span>
+  <span style="margin-left:auto">NWS · IEM NEXRAD · Claude AI</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CLAUDE AI RELAY — server-side fetches, no CORS
+// ═══════════════════════════════════════════════════
+async function aiRelay(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      tools: [{type:'web_search_20250305', name:'web_search'}],
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  if (!r.ok) throw new Error(`AI relay ${r.status}: ${await r.text()}`);
+  const d = await r.json();
+  return d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+}
+
+// JSON-returning AI call
+async function aiJSON(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      tools: [{type:'web_search_20250305', name:'web_search'}],
+      system: 'You are a data relay. Always respond with only valid JSON. No markdown fences, no explanation, no preamble.',
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  if (!r.ok) throw new Error(`AI JSON ${r.status}`);
+  const d = await r.json();
+  const txt = d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+  return JSON.parse(txt.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+}
+
+// ═══════════════════════════════════════════════════
+// PA CITIES with NWS grid pre-computed (office/x/y)
+// These skip the /points lookup entirely — direct to /forecast
+// ═══════════════════════════════════════════════════
+const CITIES = [
+  {n:"Philadelphia",    la:39.9526,lo:-75.1652, o:"PHI",x:49,y:71},
+  {n:"Pittsburgh",      la:40.4406,lo:-79.9959, o:"PBZ",x:73,y:68},
+  {n:"Allentown",       la:40.6023,lo:-75.4714, o:"PHI",x:43,y:81},
+  {n:"Erie",            la:42.1292,lo:-80.0851, o:"CLE",x:24,y:95},
+  {n:"Reading",         la:40.3356,lo:-75.9269, o:"PHI",x:37,y:74},
+  {n:"Scranton",        la:41.409, lo:-75.6624, o:"BGM",x:24,y:33},
+  {n:"Bethlehem",       la:40.6259,lo:-75.3705, o:"PHI",x:44,y:82},
+  {n:"Lancaster",       la:40.0379,lo:-76.3055, o:"PHI",x:32,y:69},
+  {n:"Harrisburg",      la:40.2732,lo:-76.8867, o:"CTP",x:54,y:64},
+  {n:"Altoona",         la:40.5187,lo:-78.3947, o:"CTP",x:34,y:69},
+  {n:"York",            la:39.9626,lo:-76.7277, o:"CTP",x:56,y:58},
+  {n:"State College",   la:40.7934,lo:-77.86,   o:"CTP",x:45,y:72},
+  {n:"Wilkes-Barre",    la:41.2459,lo:-75.8813, o:"BGM",x:26,y:28},
+  {n:"Easton",          la:40.6884,lo:-75.2207, o:"PHI",x:46,y:84},
+  {n:"Williamsport",    la:41.2412,lo:-77.0011, o:"CTP",x:51,y:80},
+  {n:"Johnstown",       la:40.3267,lo:-78.922,  o:"PBZ",x:89,y:65},
+  {n:"Pottsville",      la:40.6851,lo:-76.196,  o:"PHI",x:38,y:83},
+  {n:"Lebanon",         la:40.3409,lo:-76.4113, o:"CTP",x:61,y:63},
+  {n:"Hazleton",        la:40.9584,lo:-75.9746, o:"PHI",x:38,y:88},
+  {n:"New Castle",      la:41.0034,lo:-80.3468, o:"PBZ",x:56,y:76},
+  {n:"Chambersburg",    la:39.937, lo:-77.6611, o:"CTP",x:47,y:56},
+  {n:"Meadville",       la:41.6414,lo:-80.1512, o:"CLE",x:22,y:84},
+  {n:"Butler",          la:40.8612,lo:-79.8953, o:"PBZ",x:66,y:74},
+  {n:"Uniontown",       la:39.8998,lo:-79.7267, o:"PBZ",x:73,y:56},
+  {n:"Greensburg",      la:40.3012,lo:-79.5389, o:"PBZ",x:75,y:64},
+  {n:"Indiana",         la:40.6212,lo:-79.1525, o:"PBZ",x:79,y:71},
+  {n:"Bloomsburg",      la:41.0048,lo:-76.4552, o:"CTP",x:66,y:78},
+  {n:"Sunbury",         la:40.8626,lo:-76.7944, o:"CTP",x:63,y:75},
+  {n:"Bradford",        la:41.9537,lo:-78.6436, o:"BUF",x:65,y:20},
+  {n:"Stroudsburg",     la:40.987, lo:-75.1974, o:"PHI",x:47,y:92},
+  {n:"Gettysburg",      la:39.8309,lo:-77.2311, o:"CTP",x:51,y:54},
+  {n:"Doylestown",      la:40.3101,lo:-75.1299, o:"PHI",x:50,y:74},
+  {n:"West Chester",    la:39.9609,lo:-75.6057, o:"PHI",x:44,y:70},
+  {n:"Norristown",      la:40.1215,lo:-75.3399, o:"PHI",x:47,y:73},
+  {n:"Pottstown",       la:40.2454,lo:-75.6496, o:"PHI",x:44,y:75},
+  {n:"Carbondale",      la:41.5734,lo:-75.5038, o:"BGM",x:22,y:37},
+  {n:"Washington",      la:40.174, lo:-80.2462, o:"PBZ",x:67,y:61},
+  {n:"DuBois",          la:41.1192,lo:-78.7597, o:"CTP",x:28,y:79},
+  {n:"Lewistown",       la:40.5987,lo:-77.5711, o:"CTP",x:48,y:68},
+  {n:"Lock Haven",      la:41.137, lo:-77.4469, o:"CTP",x:50,y:82},
+  {n:"Titusville",      la:41.627, lo:-79.6739, o:"CLE",x:33,y:83},
+  {n:"Oil City",        la:41.4312,lo:-79.7061, o:"CLE",x:32,y:80},
+  {n:"Sharon",          la:41.2337,lo:-80.5015, o:"PBZ",x:52,y:79},
+  {n:"Punxsutawney",    la:40.9434,lo:-78.9697, o:"CTP",x:26,y:76},
+  {n:"Lewisburg",       la:40.9651,lo:-76.8847, o:"CTP",x:63,y:76},
+  {n:"Danville",        la:40.9648,lo:-76.6147, o:"CTP",x:66,y:76},
+  {n:"Wellsboro",       la:41.7487,lo:-77.3003, o:"CTP",x:55,y:93},
+  {n:"Towanda",         la:41.7676,lo:-76.4427, o:"BGM",x:17,y:40},
+  {n:"Honesdale",       la:41.577, lo:-75.2599, o:"PHI",x:50,y:98},
+  {n:"Jim Thorpe",      la:40.8734,lo:-75.7349, o:"PHI",x:40,y:87},
+  {n:"Hanover",         la:39.8015,lo:-76.983,  o:"CTP",x:53,y:54},
+  {n:"Phoenixville",    la:40.1298,lo:-75.5146, o:"PHI",x:45,y:72},
+  {n:"Quakertown",      la:40.4418,lo:-75.3413, o:"PHI",x:47,y:78},
+  {n:"Waynesboro",      la:39.7551,lo:-77.5786, o:"CTP",x:47,y:52},
+  {n:"Clearfield",      la:41.0276,lo:-78.4397, o:"CTP",x:33,y:76},
+  {n:"Connellsville",   la:40.0198,lo:-79.5889, o:"PBZ",x:77,y:59},
+  {n:"McKeesport",      la:40.3451,lo:-79.844,  o:"PBZ",x:72,y:65},
+  {n:"Chester",         la:39.8498,lo:-75.3557, o:"PHI",x:47,y:68},
+  {n:"Coatesville",     la:39.9834,lo:-75.8235, o:"PHI",x:41,y:70},
+  {n:"Mansfield",       la:41.8109,lo:-77.0786, o:"CTP",x:54,y:95},
+];
+
+// ═══════════════════════════════════════════════════
+// WEATHER HELPERS
+// ═══════════════════════════════════════════════════
+function wxIcon(s='', day=true) {
+  const f = s.toLowerCase();
+  if (f.includes('thunder')||f.includes('tstm')) return '⛈️';
+  if (f.includes('blizzard')||f.includes('heavy snow')) return '🌨️';
+  if (f.includes('snow')||f.includes('sleet')||f.includes('flurr')) return '❄️';
+  if (f.includes('ice')||f.includes('freezing')) return '🌧️';
+  if (f.includes('rain')||f.includes('shower')) return day?'🌦️':'🌧️';
+  if (f.includes('drizzle')||f.includes('mist')) return '🌦️';
+  if (f.includes('fog')) return '🌫️';
+  if (f.includes('wind')||f.includes('breez')) return '💨';
+  if (f.includes('overcast')||f.includes('mostly cloudy')) return day?'⛅':'☁️';
+  if (f.includes('partly')) return day?'⛅':'🌙';
+  if (f.includes('cloud')) return '☁️';
+  if (f.includes('sun')||f.includes('clear')) return day?'☀️':'🌙';
+  return day?'🌤️':'🌙';
+}
+function tc(f) {
+  if (f==null) return '#cce4ff';
+  if (f<=20) return '#7ec8e3'; if (f<=32) return '#5bc0de'; if (f<=40) return '#6db8f0';
+  if (f<=50) return '#8dd4b0'; if (f<=60) return '#a8d880'; if (f<=70) return '#f5c842';
+  if (f<=80) return '#f08030'; if (f<=90) return '#e05030'; return '#c82020';
+}
+function cd(deg) { return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(deg/22.5)%16]; }
+
+// Parse temperature — handles both integer and QuantitativeValue object
+function parseTemp(t) {
+  if (t == null) return null;
+  if (typeof t === 'number') return t;
+  if (typeof t === 'object' && t.value != null) {
+    // may be in Celsius if unitCode contains 'degC'
+    const v = t.value;
+    if (t.unitCode && t.unitCode.includes('degC')) return Math.round(v*9/5+32);
+    return Math.round(v);
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════
+// NWS DIRECT FETCH — using pre-computed grid coords
+// ═══════════════════════════════════════════════════
+const NWS_HDR = {
+  'User-Agent': 'PA-Weather-Dashboard/3.0 (pa-wx-dashboard@example.com)',
+  'Accept': 'application/geo+json'
+};
+
+const cache = {};
+
+async function loadCity(city) {
+  if (cache[city.n] !== undefined) return cache[city.n];
+  try {
+    // Use pre-computed grid — skip /points round-trip
+    const fcUrl = `https://api.weather.gov/gridpoints/${city.o}/${city.x},${city.y}/forecast`;
+    const fcR = await fetch(fcUrl, {headers: NWS_HDR});
+    if (!fcR.ok) throw new Error(`forecast ${fcR.status}`);
+    const fcJ = await fcR.json();
+
+    // Observation: get nearest station via lat/lon
+    let obs = null;
+    try {
+      const stUrl = `https://api.weather.gov/points/${city.la},${city.lo}`;
+      const stR = await fetch(stUrl, {headers: NWS_HDR});
+      if (stR.ok) {
+        const stJ = await stR.json();
+        const stationsUrl = stJ.properties?.observationStations;
+        if (stationsUrl) {
+          const osR = await fetch(stationsUrl, {headers: NWS_HDR});
+          if (osR.ok) {
+            const osJ = await osR.json();
+            const sid = osJ.observationStations?.[0]?.split('/').pop();
+            if (sid) {
+              const obR = await fetch(`https://api.weather.gov/stations/${sid}/observations/latest`, {headers: NWS_HDR});
+              if (obR.ok) obs = (await obR.json()).properties;
+            }
+          }
+        }
+      }
+    } catch(e) {}
+
+    const periods = (fcJ.properties?.periods || []).map(p => ({
+      ...p,
+      temperature: parseTemp(p.temperature)
+    }));
+
+    const result = {forecast: periods, obs};
+    cache[city.n] = result;
+    return result;
+  } catch(e) {
+    cache[city.n] = null;
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// RADAR ANIMATION
+// ═══════════════════════════════════════════════════
+let frames=[], ridx=0, playing=true, rtimer=null;
+function buildFrames() {
+  const now=new Date(), f=[];
+  for (let i=11;i>=0;i--) {
+    const t=new Date(now-i*5*60000);
+    t.setUTCSeconds(0,0); t.setUTCMinutes(Math.floor(t.getUTCMinutes()/5)*5);
+    const ts=`${t.getUTCFullYear()}${String(t.getUTCMonth()+1).padStart(2,'0')}${String(t.getUTCDate()).padStart(2,'0')}${String(t.getUTCHours()).padStart(2,'0')}${String(t.getUTCMinutes()).padStart(2,'0')}`;
+    f.push({url:`https://mesonet.agron.iastate.edu/GIS/radmap.php?width=800&height=430&bbox=-80.8,39.3,-74.3,42.8&layers[]=uscounties&layers[]=nexrad&layers[]=sbw&layers[]=usstates&ts=${ts}`,time:t});
+  }
+  return f;
+}
+function showFrame(i) {
+  const f=frames[i]; if(!f)return;
+  document.getElementById('radarImg').src=f.url;
+  document.getElementById('rts').textContent=f.time.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/New_York'})+' ET';
+  document.getElementById('rfc').textContent=`Frame ${i+1} / ${frames.length}`;
+}
+function initRadar() {
+  frames=buildFrames(); showFrame(0);
+  rtimer=setInterval(()=>{ridx=(ridx+1)%frames.length;showFrame(ridx);},700);
+  document.getElementById('sbRadar').textContent='Radar: IEM NEXRAD (12 frames, 5-min intervals)';
+  document.getElementById('btnPlay').onclick=()=>{
+    playing=!playing;
+    if (playing) { rtimer=setInterval(()=>{ridx=(ridx+1)%frames.length;showFrame(ridx);},700); document.getElementById('btnPlay').textContent='⏸ PAUSE'; }
+    else { clearInterval(rtimer); document.getElementById('btnPlay').textContent='▶ PLAY'; }
+  };
+  setInterval(()=>{frames=buildFrames();},5*60*1000);
+}
+
+// ═══════════════════════════════════════════════════
+// RWS via Claude AI
+// ═══════════════════════════════════════════════════
+async function fetchRWS() {
+  document.getElementById('sbRws').textContent='RWS: Fetching via Claude AI…';
+  try {
+    const text = await aiRelay(
+      `Fetch the latest NWS Regional Weather Summary (product code RWS) from the State College, Pennsylvania forecast office (CTP). ` +
+      `Use the NWS API: first GET https://api.weather.gov/products/types/RWS/locations/CTP to get the list, then GET the URL of the most recent product to retrieve its full text. ` +
+      `Return ONLY the raw product text verbatim — the actual Regional Weather Summary as issued by the meteorologist, ` +
+      `starting from the product header line. Do not summarize, add commentary, or use any markdown formatting. ` +
+      `If RWS is not available for CTP, try https://api.weather.gov/products/types/RWS/locations/PHI instead and return that. ` +
+      `Include the issuance time line from the product header.`
+    );
+    const timeMatch = text.match(/(\d{3,4}\s+(?:AM|PM)\s+\w+\s+\w+\s+\w+\s+\d+\s+\d{4})/i);
+    document.getElementById('rwsHdr').textContent = timeMatch
+      ? `Issued: ${timeMatch[1]}  |  NWS State College, PA (CTP)`
+      : 'NWS State College, PA (CTP) — Regional Weather Summary';
+    document.getElementById('rwsBody').textContent = text;
+    document.getElementById('sbRws').textContent='RWS: Loaded via Claude AI';
+  } catch(e) {
+    document.getElementById('rwsHdr').textContent='NWS Regional Weather Summary';
+    document.getElementById('rwsBody').innerHTML=
+      `<span style="color:var(--orange)">Error: ${e.message}</span>\n\n`+
+      `<a href="https://forecast.weather.gov/product.php?site=NWS&issuedby=CTP&product=RWS&format=CI" target="_blank" style="color:var(--cyan)">↗ View RWS on weather.gov</a>`;
+    document.getElementById('sbRws').textContent='RWS: Error';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════
+async function fetchAlerts() {
+  try {
+    const r = await fetch('https://api.weather.gov/alerts/active?area=PA', {headers: NWS_HDR});
+    if (!r.ok) return;
+    const d = await r.json();
+    const list=(d.features||[]).slice(0,4).map(a=>a.properties.headline||a.properties.event).filter(Boolean);
+    if (list.length) {
+      const b=document.getElementById('alertsBar');
+      b.textContent='⚠ '+list.join('  ·  ');
+      b.classList.add('on');
+    }
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════════
+// CITY CARDS
+// ═══════════════════════════════════════════════════
+let cityData={}, selCity=null;
+
+function cid(city) { return 'c'+city.n.replace(/\W/g,''); }
+
+function cardHTML(city, d) {
+  if (!d) return `<div class="cname">${city.n}</div><div class="cload" style="color:var(--orange)">—</div>`;
+  const p=d.forecast?.[0], obs=d.obs;
+  const temp=p?.temperature??null;
+  const desc=p?.shortForecast||obs?.textDescription||'';
+  const day=p?.isDaytime!==false;
+  const wind=p?`${p.windDirection||''} ${p.windSpeed||''}`.trim():'';
+  const color=tc(temp);
+  return `<div class="cname">${city.n}</div>
+<div class="crow">
+  <div><div class="ctemp" style="color:${color}">${temp!=null?temp+'°':'—'}</div><div class="cwind">${wind||'&nbsp;'}</div></div>
+  <div style="text-align:right"><div class="cicon">${wxIcon(desc,day)}</div><div class="cdesc">${desc}</div></div>
+</div>`;
+}
+
+function buildGrid(filter='') {
+  const g=document.getElementById('cityGrid');
+  g.innerHTML='';
+  CITIES.filter(c=>c.n.toLowerCase().includes(filter.toLowerCase())).forEach(city=>{
+    const el=document.createElement('div');
+    el.className='card'+(selCity?.n===city.n?' sel':'');
+    el.id=cid(city);
+    const d=cityData[city.n];
+    if (d!==undefined) {
+      const temp=d?.forecast?.[0]?.temperature??null;
+      if (temp!=null) el.style.setProperty('--tc',tc(temp));
+      el.innerHTML=cardHTML(city,d);
+    } else {
+      el.innerHTML=`<div class="cname">${city.n}</div><div class="cload"><span class="spin"></span></div>`;
+    }
+    el.onclick=()=>selectCity(city);
+    g.appendChild(el);
+  });
+}
+
+function updateCard(city) {
+  const el=document.getElementById(cid(city)); if(!el)return;
+  const d=cityData[city.n];
+  const temp=d?.forecast?.[0]?.temperature??null;
+  if (temp!=null) el.style.setProperty('--tc',tc(temp));
+  el.innerHTML=cardHTML(city,d);
+  el.onclick=()=>selectCity(city);
+  if (selCity?.n===city.n) el.classList.add('sel');
+}
+
+function selectCity(city) {
+  selCity=city;
+  document.querySelectorAll('.card').forEach(e=>e.classList.remove('sel'));
+  document.getElementById(cid(city))?.classList.add('sel');
+  renderDetail(city);
+  if (cityData[city.n]===undefined) {
+    loadCity(city).then(d=>{cityData[city.n]=d; updateCard(city); renderDetail(city);});
+  }
+}
+
+function renderDetail(city) {
+  const panel=document.getElementById('detail');
+  const d=cityData[city.n];
+  if (d===undefined) {
+    panel.innerHTML=`<div class="dname">${city.n.toUpperCase()}</div><div class="ph"><span class="spin"></span> Loading…</div>`;
+    return;
+  }
+  if (!d) {
+    panel.innerHTML=`<div class="dname">${city.n.toUpperCase()}</div><div class="ph" style="color:var(--orange)">Data unavailable</div>`;
+    return;
+  }
+  const p=d.forecast?.[0], obs=d.obs;
+  const temp=p?.temperature??null, desc=p?.shortForecast||obs?.textDescription||'', day=p?.isDaytime!==false;
+  const color=tc(temp);
+
+  let obsMeta='';
+  if (obs) {
+    const wv=obs.windSpeed?.value, wd=obs.windDirection?.value,
+          hum=obs.relativeHumidity?.value, vis=obs.visibility?.value, bp=obs.barometricPressure?.value;
+    if (wv!=null) obsMeta+=`<div>Wind <span>${wd!=null?cd(wd)+' ':''} ${Math.round(wv*0.621371)} mph</span></div>`;
+    if (hum!=null) obsMeta+=`<div>Humidity <span>${Math.round(hum)}%</span></div>`;
+    if (vis!=null) obsMeta+=`<div>Visibility <span>${Math.round(vis/1609.34)} mi</span></div>`;
+    if (bp!=null) obsMeta+=`<div>Pressure <span>${(bp*0.0002953).toFixed(2)} inHg</span></div>`;
+  }
+
+  const fcHTML=(d.forecast||[]).slice(0,8).map(fp=>`
+    <div class="frow">
+      <div class="fname">${fp.name}</div>
+      <div class="fdesc">${wxIcon(fp.shortForecast,fp.isDaytime)} ${fp.shortForecast}</div>
+      <div class="ftemp" style="color:${tc(fp.temperature)}">${fp.temperature!=null?fp.temperature+'°':'—'}${fp.temperatureUnit||'F'}</div>
+    </div>`).join('');
+
+  panel.innerHTML=`
+    <div class="dname">${city.n.toUpperCase()}</div>
+    <div class="dcoord">${city.la.toFixed(4)}°N  ${Math.abs(city.lo).toFixed(4)}°W  ·  NWS ${city.o}</div>
+    <div class="dcur">
+      <div class="dicon">${wxIcon(desc,day)}</div>
+      <div style="flex:1">
+        <div class="dtemp" style="color:${color}">${temp!=null?temp+'°F':'—'}</div>
+        <div style="font-size:.76rem;color:var(--text);margin:3px 0">${desc}</div>
+        <div class="dmeta">${obsMeta||'<span style="color:var(--dim);font-size:.6rem">Observation data unavailable</span>'}</div>
+      </div>
+    </div>
+    ${fcHTML?`<div class="flbl">7-DAY FORECAST</div><div class="frows">${fcHTML}</div>`:''}
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:.53rem;color:var(--dim);margin-top:8px;padding-top:5px;border-top:1px solid var(--border)">Source: NWS api.weather.gov · Office ${city.o} Grid ${city.x},${city.y}</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════
+function tick() {
+  document.getElementById('clock').textContent = new Date().toLocaleString('en-US',{
+    timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',
+    hour:'2-digit',minute:'2-digit',second:'2-digit'
+  })+' ET';
+}
+
+// ═══════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════
+document.getElementById('csearch').addEventListener('input', function(){buildGrid(this.value);});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+async function init() {
+  tick(); setInterval(tick,1000);
+  initRadar();
+  buildGrid();
+  fetchRWS();
+  fetchAlerts();
+
+  document.getElementById('hst').textContent='Loading cities…';
+  const BATCH=5;
+  let done=0;
+  for (let i=0; i<CITIES.length; i+=BATCH) {
+    await Promise.all(CITIES.slice(i,i+BATCH).map(async city=>{
+      const d=await loadCity(city);
+      cityData[city.n]=d;
+      updateCard(city);
+      if (selCity?.n===city.n) renderDetail(city);
+      done++;
+      document.getElementById('sbCity').textContent=`Cities: ${done} / ${CITIES.length}`;
+    }));
+    await new Promise(r=>setTimeout(r,400));
+  }
+  document.getElementById('sbCity').textContent=`Cities: all ${CITIES.length} loaded ✓`;
+  document.getElementById('hst').textContent='All data loaded';
+  setInterval(fetchRWS, 30*60*1000);
+}
+
+init();
+</script>
+</body>
+</html>
