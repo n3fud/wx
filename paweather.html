@@ -377,29 +377,29 @@ function initRadar() {
 // ═══════════════════════════════════════════════════
 // RWS 
 // ═══════════════════════════════════════════════════
-async function fetchRWS() {
-    try{
-
-        const list = await fetch("https://api.weather.gov/products/types/RWS/locations/CTP");
-        const listData = await list.json();
-
+//async function fetchRWS() {
+//    try{
+//
+//      const list = await fetch("https://api.weather.gov/products/types/RWS/locations/CTP");
+//        const listData = await list.json();
+//
         // correct property name
-        const latestProductURL = listData["@graph"][0]["@id"];
+//        const latestProductURL = listData["@graph"][0]["@id"];
 
-        const product = await fetch(latestProductURL);
-        const productData = await product.json();
+//        const product = await fetch(latestProductURL);
+//        const productData = await product.json();
 
-        document.getElementById("summary").textContent =
-            productData.productText;
+//        document.getElementById("summary").textContent =
+//            productData.productText;
 
-    }
-    catch(err){
+//    }
+//    catch(err){
 
-        document.getElementById("summary").textContent =
-            "Unable to load weather summary.";
-        console.error(err);
-    }
-}
+//        document.getElementById("summary").textContent =
+//            "Unable to load weather summary.";
+//        console.error(err);
+//    }
+//}
 
 // ═══════════════════════════════════════════════════
 // ALERTS
@@ -549,7 +549,7 @@ async function init() {
   tick(); setInterval(tick,1000);
   initRadar();
   buildGrid();
-  fetchRWS();
+//  fetchRWS();
   fetchAlerts();
 
   document.getElementById('hst').textContent='Loading cities…';
