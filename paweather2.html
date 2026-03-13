@@ -352,7 +352,7 @@ function buildFrames() {
     const t=new Date(now-i*5*60000);
     t.setUTCSeconds(0,0); t.setUTCMinutes(Math.floor(t.getUTCMinutes()/5)*5);
     const ts=`${t.getUTCFullYear()}${String(t.getUTCMonth()+1).padStart(2,'0')}${String(t.getUTCDate()).padStart(2,'0')}${String(t.getUTCHours()).padStart(2,'0')}${String(t.getUTCMinutes()).padStart(2,'0')}`;
-    f.push({url:`https://mesonet.agron.iastate.edu/GIS/radmap.php?width=800&height=600&bbox=-81.3,39.0,-74.1,42.75&layers[]=uscounties&layers[]=nexrad&layers[]=sbw&layers[]=usstates&ts=${ts}`,time:t});
+    f.push({url:`https://mesonet.agron.iastate.edu/GIS/radmap.php?width=2048&height=1960&bbox=-81.3,39.0,-74.1,42.78&layers[]=uscounties&layers[]=nexrad&layers[]=sbw&layers[]=usstates&ts=${ts}`,time:t});
   }
   return f;
 }
